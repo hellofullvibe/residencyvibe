@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { Menu01Icon } from "hugeicons-react";
 import { useAuth } from "@/lib/auth";
 
 const links = [
@@ -27,6 +27,15 @@ export default function Nav() {
   const pathname = usePathname();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+
+  // Guests don't see Search or Saved.
+  const visibleLinks = user
+    ? links
+    : links.filter((l) => l.href !== "/search" && l.href !== "/saved");
+  // Guests don't see Profile or Saved in the mobile menu.
+  const visibleMenuLinks = user
+    ? menuLinks
+    : menuLinks.filter((l) => l.href !== "/account" && l.href !== "/saved");
 
   async function handleLogout() {
     await logout();
@@ -54,7 +63,7 @@ export default function Nav() {
         </Link>
 
         <nav className="hidden items-center text-sm sm:flex items-center justify-center h-full">
-          {links.map((l) => (
+          {visibleLinks.map((l) => (
             <Link
               key={l.href}
               href={l.href}
@@ -91,9 +100,7 @@ export default function Nav() {
                 className={`${menuOpen ? "text-blue-700" : "text-slate-700"}  px-4 h-full hover:bg-gray-50 sm:hidden`}
                 aria-label="Menu"
               >
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                  <path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-                </svg>
+                <Menu01Icon size={20} strokeWidth={2} />
               </button>
             </>
           ) : (
@@ -115,9 +122,7 @@ export default function Nav() {
                 className="rounded-md px-2 py-1.5 text-slate-700 hover:bg-slate-100 sm:hidden"
                 aria-label="Menu"
               >
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                  <path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-                </svg>
+                <Menu01Icon size={20} strokeWidth={2} />
               </button>
             </>
           )}
@@ -128,7 +133,7 @@ export default function Nav() {
       {menuOpen && (
         <div className="border-t border-slate-200 bg-white sm:hidden">
           <nav className="mx-auto max-w-6xl px-4 py-2">
-            {menuLinks.map((l) => (
+            {visibleMenuLinks.map((l) => (
               <button
                 key={l.href}
                 onClick={() => go(l.href)}
@@ -141,12 +146,14 @@ export default function Nav() {
                 {l.label}
               </button>
             ))}
-            <button
-              onClick={handleLogout}
-              className="block w-full rounded-md px-3 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50"
-            >
-              Sign out
-            </button>
+            {user && (
+              <button
+                onClick={handleLogout}
+                className="block w-full rounded-md px-3 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50"
+              >
+                Sign out
+              </button>
+            )}
           </nav>
         </div>
       )}
