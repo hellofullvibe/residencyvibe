@@ -3,23 +3,30 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Menu01Icon } from "hugeicons-react";
+import { Bookmark02Icon, Cancel01Icon, Menu01Icon, Search01Icon } from "hugeicons-react";
 import { useAuth } from "@/lib/auth";
 
+// const links = [
+//   { href: "/", label: "Home" },
+//   { href: "/questions", label: "Question Bank" },
+//   { href: "/find-partner", label: "Find Partner" },
+//   { href: "/search", label: "Search" },
+//   { href: "/saved", label: "Saved" },
+// ];
 const links = [
   { href: "/", label: "Home" },
   { href: "/questions", label: "Question Bank" },
   { href: "/find-partner", label: "Find Partner" },
-  { href: "/search", label: "Search" },
-  { href: "/saved", label: "Saved" },
+  // { href: "/search", label: "Search" },
+  // { href: "/saved", label: "Saved" },
 ];
 
 const menuLinks = [
-  { href: "/account", label: "Profile" },
   { href: "/", label: "Home" },
+  { href: "/account", label: "Profile" },
   { href: "/questions", label: "Question Bank" },
   { href: "/find-partner", label: "Find Partner" },
-  { href: "/saved", label: "Saved" },
+  { href: "/saved", label: "Saved Questions" },
 ];
 
 export default function Nav() {
@@ -48,15 +55,15 @@ export default function Nav() {
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-slate-100 bg-white/90 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-2 font-semibold">
           <img
             src="/logo.png"
             alt="Residency Vibe"
-            className="h-full w-14 content-cover"
+            className="h-full w-14 content-cover shrink-0"
           />
-          <div className="text-blue-700 font-bold gap-0 leading-none flex flex-col">
+          <div className="text-blue-700 font-bold gap-0 leading-none sm:flex flex-col hidden">
             <span className="opacity-50">Residency</span>
             <span>Vibe</span>
           </div>
@@ -70,7 +77,7 @@ export default function Nav() {
               className={`flex items-center font-medium h-full justify-center border-b-2 px-4 h-full transition-all ease-in-out duration-300 ${
                 pathname === l.href
                   ? "text-blue-700 border-blue-700"
-                  : "text-slate-600 hover:bg-gray-50 border-transparent"
+                  : "text-slate-700 hover:bg-gray-50 border-transparent"
               }`}
             >
               {l.label}
@@ -81,6 +88,30 @@ export default function Nav() {
         <div className="flex items-center h-full text-sm">
           {loading ? null : user ? (
             <>
+            <Link
+href="/search"
+                className={`px-4 h-full border-b-2 hover:bg-gray-50 hidden sm:flex items-center justify-center
+                ${pathname === "/search"
+                    ? "text-blue-700 border-blue-700"
+                    : "text-black hover:bg-gray-50 border-transparent"}
+                `}
+                aria-label="Search"
+              >
+                <Search01Icon size={20} strokeWidth={2} />
+              </Link>
+
+            <Link
+href="/saved"
+                className={`px-4 h-full border-b-2 border-blue-700 hover:bg-gray-50 hidden sm:flex items-center justify-center
+                ${pathname === "/saved"
+                    ? "text-blue-700 border-blue-700"
+                    : "text-black hover:bg-gray-50 border-transparent"}
+                `}
+                aria-label="Saved"
+              >
+                <Bookmark02Icon size={20} strokeWidth={2} />
+              </Link>
+
               <Link
                 href="/account"
                 className={`hidden sm:flex items-center justify-center h-full px-8 border-b-2 font-medium ${
@@ -95,34 +126,39 @@ export default function Nav() {
               <span className="flex items-center justify-center px-4 h-full text-black font-medium sm:hidden">
                 @{user.username}
               </span>
+              
               <button
                 onClick={() => setMenuOpen((v) => !v)}
-                className={`${menuOpen ? "text-blue-700" : "text-slate-700"}  px-4 h-full hover:bg-gray-50 sm:hidden`}
+                className={`${menuOpen ? "text-blue-700" : "text-slate-700"}  cursor-pointer px-4 h-full hover:bg-gray-50 sm:hidden`}
                 aria-label="Menu"
               >
-                <Menu01Icon size={20} strokeWidth={2} />
+                {menuOpen ? 
+                <Cancel01Icon size={20} strokeWidth={2} />:
+                <Menu01Icon size={20} strokeWidth={2} />}
               </button>
             </>
           ) : (
             <>
               <Link
                 href="/login"
-                className="h-full flex items-center justify-center px-8 text-blue-700 hover:bg-slate-50 font-semibold transition-all ease-in-out duration-300"
+                className="h-full flex items-center justify-center px-4 sm:px-8 text-blue-700 hover:bg-slate-50 font-semibold transition-all ease-in-out duration-300"
               >
                 Sign In
               </Link>
               <Link
                 href="/signup"
-                className="h-full flex items-center justify-center px-8 text-white bg-blue-700 hover:bg-blue-800 font-semibold transition-all ease-in-out duration-300"
+                className="h-full flex items-center justify-center px-4 sm:px-8 text-white bg-blue-700 hover:bg-blue-800 font-semibold transition-all ease-in-out duration-300"
               >
                 Join Now
               </Link>
               <button
                 onClick={() => setMenuOpen((v) => !v)}
-                className="rounded-md px-2 py-1.5 text-slate-700 hover:bg-slate-100 sm:hidden"
+                className={`${menuOpen ? "text-blue-700" : "text-slate-700"}  cursor-pointer px-4 h-full hover:bg-gray-50 sm:hidden`}
                 aria-label="Menu"
               >
-                <Menu01Icon size={20} strokeWidth={2} />
+                {menuOpen ? 
+                <Cancel01Icon size={20} strokeWidth={2} />:
+                <Menu01Icon size={20} strokeWidth={2} />}
               </button>
             </>
           )}
@@ -131,29 +167,42 @@ export default function Nav() {
 
       {/* Mobile dropdown menu */}
       {menuOpen && (
-        <div className="border-t border-slate-200 bg-white sm:hidden">
-          <nav className="mx-auto max-w-6xl px-4 py-2">
+        <div className="border-t border-slate-100 bg-white sm:hidden">
+          <nav className="mx-auto max-w-6xl py-6 w-full">
+            {user &&
+            <div className="w-full px-6 mt-4">
+              <Link
+                href="/search"
+                className="flex items-center gap-2 w-full h-14 px-6 text-sm font-medium text-slate-700 border border-slate-200 bg-gray-50"
+              >
+                <Search01Icon size={20} strokeWidth={2} />
+                <span>Search Questions</span>
+              </Link>
+              </div>}
             {visibleMenuLinks.map((l) => (
               <button
                 key={l.href}
                 onClick={() => go(l.href)}
-                className={`block w-full rounded-md px-3 py-2.5 text-left text-sm transition-colors ${
+                className={`cursor-pointer w-full h-14 px-12 text-left border-l-4 text-sm font-medium transition-all ease-in-out duration-300 ${
                   pathname === l.href
-                    ? "bg-slate-100 font-medium text-slate-900"
-                    : "text-slate-700 hover:bg-slate-50"
+                    ? "bg-gray-50  text-blue-700 border-blue-700"
+                    : "text-slate-700 hover:bg-gray-50 border-transparent"
                 }`}
               >
                 {l.label}
               </button>
             ))}
-            {user && (
-              <button
-                onClick={handleLogout}
-                className="block w-full rounded-md px-3 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50"
+            
+              <div className="w-full px-6 mt-4">
+              <Link
+                href="https://buymeacoffee.com/residencyvibe"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="cursor-pointer flex items-center justify-center w-full h-14 text-center text-sm font-semibold text-blue-700 bg-blue-700/5 border border-blue-700"
               >
-                Sign out
-              </button>
-            )}
+                Support Us
+              </Link>
+              </div>
           </nav>
         </div>
       )}
