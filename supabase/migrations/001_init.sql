@@ -56,9 +56,10 @@ create index if not exists questions_program_idx on public.questions (program);
 create index if not exists questions_star_idx on public.questions (star);
 create index if not exists questions_frequency_idx on public.questions (frequency);
 
--- full text search on questions + variants
+-- full text search on questions (variants are searched via ILIKE in the query;
+-- array_to_string is STABLE so it cannot be used in an index expression)
 create index if not exists questions_fts_idx on public.questions
-  using gin (to_tsvector('english', text || ' ' || array_to_string(variants, ' ')));
+  using gin (to_tsvector('english', text));
 
 -- ---------- comments & replies (parent_id = reply chain) ----------
 create table if not exists public.comments (

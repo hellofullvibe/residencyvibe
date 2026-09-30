@@ -52,6 +52,45 @@ npm install
 npm run dev            # starts Next.js on :3000
 ```
 
+## Deploy (production)
+
+### 1. Supabase (database)
+
+1. Create a project at https://supabase.com -> New project.
+2. Open **SQL Editor** and run `supabase/migrations/001_init.sql`, then `002_ratings.sql`.
+3. Settings -> Database -> Connection string. Copy the **pooler** URI (port 6543) into
+   the backend's `DATABASE_URL`.
+4. (Optional) Seed the question bank from your machine:
+   ```bash
+   cd backend
+   go run ./cmd/seed -csv "/path/to/Sorting Interview Questions - Sheet1.csv" -db "postgres://postgres.YOUR_REF:YOUR_PASSWORD@aws-0-<region>.pooler.supabase.com:6543/postgres"
+   ```
+
+### 2. Backend on Render
+
+1. Push this repo to GitHub (already done: `hellofullvibe/residencyvibe`).
+2. Render -> New -> **Blueprint** -> pick the repo. It reads `render.yaml`.
+3. After the service is created, go to Environment and set:
+   - `DATABASE_URL` = your Supabase pooler URI
+   - `ALLOWED_ORIGIN` = your Vercel frontend URL (e.g. `https://residencyvibe.vercel.app`)
+4. Deploy. Note the service URL (e.g. `https://residencyvibe-backend.onrender.com`).
+
+### 3. Frontend on Vercel
+
+1. https://vercel.com -> Add New Project -> import the repo.
+2. Root directory: `frontend`.
+3. Framework preset: Next.js (auto-detected).
+4. Environment variables:
+   - `BACKEND_URL` = your Render service URL (e.g. `https://residencyvibe-backend.onrender.com`)
+5. Deploy. The app proxies `/api/*` to Render server-side, so session cookies stay
+   same-origin on the Vercel domain.
+
+### 4. Custom domain (www.residencyvibe.space)
+
+1. Vercel project -> Settings -> Domains -> add `www.residencyvibe.space`.
+2. Follow Vercel's DNS instructions at your registrar (CNAME `www` -> `cname.vercel-dns.com`).
+3. Update the backend's `ALLOWED_ORIGIN` to `https://www.residencyvibe.space` and redeploy.
+
 ## API overview
 
 | Method | Path                     | Description                          |

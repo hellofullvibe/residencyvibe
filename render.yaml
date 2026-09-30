@@ -1,0 +1,19 @@
+# Render Blueprint for the ResidencyVibe Go backend.
+# Deploy: render.com -> New -> Blueprint -> select this repo.
+services:
+  - type: web
+    name: residencyvibe-backend
+    runtime: go
+    rootDir: backend
+    plan: free
+    buildCommand: go build -o server .
+    startCommand: ./server
+    healthCheckPath: /api/meta
+    envVars:
+      - key: PORT
+        value: 10000
+      # Set these in the Render dashboard after the first deploy:
+      - key: DATABASE_URL
+        sync: false
+      - key: ALLOWED_ORIGIN
+        sync: false
