@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, ApiError } from "@/lib/api";
+import type { User } from "@/lib/types";
 import { useAuth } from "@/lib/auth";
 import DonationCard from "@/components/DonationCard";
 
@@ -49,6 +50,14 @@ export default function AccountPage() {
             value={new Date(user.created_at).toLocaleDateString()}
           />
         </dl>
+      </div>
+
+      <ProfileForm user={user} onError={setError} />
+
+      <div className="mt-6">
+        <DonationCard
+          description="ResidencyPrep is free for everyone. If it helped you prepare, consider a small donation to keep it running."
+        />
       </div>
       
       <div className="mt-6">
@@ -117,6 +126,149 @@ function Row({ label, value }: { label: string; value: string }) {
     <div className="flex items-center justify-between gap-4">
       <dt className="text-slate-500">{label}</dt>
       <dd className="font-medium text-slate-900">{value}</dd>
+    </div>
+  );
+}
+
+const timezones = [
+  "US/Eastern",
+  "US/Central",
+  "US/Mountain",
+  "US/Pacific",
+  "US/Alaska",
+  "US/Hawaii",
+  "Europe/London",
+  "Europe/Paris",
+  "Europe/Berlin",
+  "Asia/Dubai",
+  "Asia/Kolkata",
+  "Asia/Singapore",
+  "Asia/Tokyo",
+  "Australia/Sydney",
+  "America/Toronto",
+  "America/Mexico_City",
+  "America/Sao_Paulo",
+];
+
+function ProfileForm({
+  user,
+  onError,
+}: {
+  user: User;
+  onError: (msg: string) => void;
+}) {
+  const { refresh } = useAuth();
+  const [form, setForm] = useState({
+    gender: user.gender ?? "",
+    timezone: user.timezone ?? "",
+    phone: user.phone ?? "",
+    specialty: user.specialty ?? "",
+  });
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState("");
+
+  function set<K extends keyof typeof form>(k: K, v: string) {
+    setForm((f) => ({ ...f, [k]: v }));
+  }
+
+  async function save() {
+    setSaving(true);
+    setMsg("");
+    onError("");
+    try {
+      await api.put("/api/account/profile", {
+        gender: form.gender.trim(),
+        timezone: form.timezone.trim(),
+        phone: form.phone.trim(),
+        specialty: form.specialty.trim(),
+      });
+      await refresh();
+      setMsg("Profile saved.");
+    } catch (err) {
+      onError(err instanceof ApiError ? err.message : "Could not save profile");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const inputCls =
+    "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-slate-500";
+
+  return (
+    <div className="mt-6 rounded-xl border border-slate-200 bg-white p-6">
+      <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+        Additional details
+      </h2>
+      <p className="mt-2 text-sm text-slate-600">
+        Gender, timezone and phone are required to create or join Find Partner sessions.
+      </p>
+      <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <label className="block">
+          <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">
+            Gender
+          </span>
+          <select
+            value={form.gender}
+            onChange={(e) => set("gender", e.target.value)}
+            className={inputCls}
+          >
+            <option value="">Select…</option>
+            <option value="Female">Female</option>
+            <option value="Male">Male</option>
+            <option value="Non-binary">Non-binary</option>
+            <option value="Prefer not to say">Prefer not to say</option>
+          </select>
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">
+            Timezone
+          </span>
+          <select
+            value={form.timezone}
+            onChange={(e) => set("timezone", e.target.value)}
+            className={inputCls}
+          >
+            <option value="">Select…</option>
+            {timezones.map((tz) => (
+              <option key={tz} value={tz}>
+                {tz}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">
+            Phone number
+          </span>
+          <input
+            value={form.phone}
+            onChange={(e) => set("phone", e.target.value)}
+            placeholder="+1 555 123 4567"
+            className={inputCls}
+          />
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">
+            Specialty
+          </span>
+          <input
+            value={form.specialty}
+            onChange={(e) => set("specialty", e.target.value)}
+            placeholder="e.g. Internal Medicine"
+            className={inputCls}
+          />
+        </label>
+      </div>
+      {msg && (
+        <p className="mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{msg}</p>
+      )}
+      <button
+        onClick={save}
+        disabled={saving}
+        className="mt-4 rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-60"
+      >
+        {saving ? "Saving…" : "Save profile"}
+      </button>
     </div>
   );
 }

@@ -3,6 +3,10 @@ export interface User {
   full_name: string;
   email: string;
   username: string;
+  gender?: string | null;
+  timezone?: string | null;
+  phone?: string | null;
+  specialty?: string | null;
   created_at: string;
 }
 
@@ -72,4 +76,37 @@ export interface Meta {
   programs: string[];
   institutional_settings: string[];
   frequencies: string[];
+}
+
+export interface PartnerInterest {
+  id: string;
+  request_id: string;
+  user_id: string;
+  username: string;
+  full_name: string;
+  gender?: string | null;
+  timezone?: string | null;
+  status: "interested" | "approved";
+  created_at: string;
+}
+
+export interface PartnerRequest {
+  id: string;
+  user_id: string;
+  creator_username: string;
+  creator_name: string;
+  gender?: string | null;
+  session_date: string;
+  session_time: string;
+  timezone: string;
+  max_participants: number;
+  specialty?: string | null;
+  notes?: string | null;
+  created_at: string;
+  interested_count: number;
+  my_interest?: "interested" | "approved";
+  is_mine: boolean;
+  interests?: PartnerInterest[];
+  creator_email?: string;
+  creator_phone?: string;
 }
