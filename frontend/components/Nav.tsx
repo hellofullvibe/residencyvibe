@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
@@ -40,10 +41,14 @@ export default function Nav() {
     <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-2 font-semibold text-slate-900">
-          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-900 text-sm text-white">
-            R
-          </span>
-          <span className="hidden sm:inline">ResidencyPrep</span>
+          <Image
+            src="/logo.png"
+            alt="ResidencyPrep"
+            width={209}
+            height={101}
+            className="h-8 w-auto"
+            priority
+          />
         </Link>
 
         <nav className="hidden items-center gap-1 text-sm sm:flex">
