@@ -1,0 +1,23 @@
+# deps
+node_modules/
+*.log
+
+# env
+.env
+.env.local
+.env.*.local
+
+# next
+frontend/.next/
+frontend/out/
+frontend/build/
+
+# go
+backend/bin/
+backend/*.test
+
+# os
+.DS_Store
+
+# local csv seed copy
+backend/data/raw.csv
