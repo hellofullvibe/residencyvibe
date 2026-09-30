@@ -223,7 +223,7 @@ function WallCard({
   onInterested: () => void;
 }) {
   const canJoin = user && profileComplete && !r.is_mine && !r.my_interest;
-  const contactVisible = user && (r.my_interest || r.is_mine);
+  const contactVisible = user && (r.my_interest === "approved" || r.is_mine);
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-5">
@@ -333,23 +333,45 @@ function MyRequestCard({
                 className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2"
               >
                 <div className="text-sm">
-                  <span className="font-medium text-slate-900">{i.full_name}</span>{" "}
+                  <span className="font-medium text-slate-900">{i.full_name || `@${i.username}`}</span>
                   <span className="text-slate-500">@{i.username}</span>
                   {i.gender && <span className="ml-2 text-slate-500">{i.gender}</span>}
                   {i.timezone && <span className="ml-2 text-slate-500">{i.timezone}</span>}
                 </div>
-                {i.status === "approved" ? (
-                  <span className="rounded-full bg-emerald-100 px-3 py-0.5 text-xs font-medium text-emerald-800">
-                    Approved
-                  </span>
-                ) : (
-                  <button
-                    onClick={() => onApprove(i.user_id)}
-                    className="rounded-md bg-slate-900 px-3 py-1 text-xs font-medium text-white hover:bg-slate-800"
-                  >
-                    Approve
-                  </button>
-                )}
+                <div className="flex flex-wrap items-center gap-2">
+                  {i.status === "approved" ? (
+                    <>
+                      <span className="rounded-full bg-emerald-100 px-3 py-0.5 text-xs font-medium text-emerald-800">
+                        Approved
+                      </span>
+                      {i.email && (
+                        <a
+                          href={`mailto:${i.email}?subject=${encodeURIComponent("Find Partner: mock interview session")}`}
+                          className="rounded-md border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                        >
+                          Email
+                        </a>
+                      )}
+                      {i.phone && (
+                        <a
+                          href={`https://wa.me/${i.phone.replace(/\D/g, "")}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="rounded-md border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-100"
+                        >
+                          WhatsApp
+                        </a>
+                      )}
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => onApprove(i.user_id)}
+                      className="rounded-md bg-slate-900 px-3 py-1 text-xs font-medium text-white hover:bg-slate-800"
+                    >
+                      Approve
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
           </div>

@@ -54,8 +54,10 @@ type Interest struct {
 	UserID    uuid.UUID `json:"user_id"`
 	Username  string    `json:"username"`
 	FullName  string    `json:"full_name"`
-	Gender    *string   `json:"gender"`
-	Timezone  *string   `json:"timezone"`
+	Gender    *string   `json:"gender,omitempty"`
+	Timezone  *string   `json:"timezone,omitempty"`
+	Email     *string   `json:"email,omitempty"`
+	Phone     *string   `json:"phone,omitempty"`
 	Status    string    `json:"status"`
 	CreatedAt time.Time `json:"created_at"`
 }
@@ -368,8 +370,9 @@ func (h *Handler) attachState(r *http.Request, userID uuid.UUID, items []Request
 	}
 }
 
-// withContact reveals the creator's contact info when the requester is the creator
-// or has an interest record.
+// withContact reveals the creator's contact info only when the requester is the
+// creator OR has been APPROVED as a participant. A merely "interested" participant
+// cannot see the creator's contact details yet.
 func (h *Handler) withContact(r *http.Request, userID uuid.UUID, item Request) Request {
 	if item.UserID == userID {
 		me := auth.UserFrom(r)
@@ -377,11 +380,11 @@ func (h *Handler) withContact(r *http.Request, userID uuid.UUID, item Request) R
 		item.CreatorPhone = me.Phone
 		return item
 	}
-	var exists bool
+	var approved bool
 	err := h.pool.QueryRow(r.Context(), `
-		select exists(select 1 from partner_interests where request_id = $1 and user_id = $2)`,
-		item.ID, userID).Scan(&exists)
-	if err == nil && exists {
+		select exists(select 1 from partner_interests where request_id = $1 and user_id = $2 and status = 'approved')`,
+		item.ID, userID).Scan(&approved)
+	if err == nil && approved {
 		var email, phone *string
 		if err := h.pool.QueryRow(r.Context(),
 			`select email, phone from users where id = $1`, item.UserID).Scan(&email, &phone); err == nil {
@@ -392,9 +395,17 @@ func (h *Handler) withContact(r *http.Request, userID uuid.UUID, item Request) R
 	return item
 }
 
+// loadInterests returns a session's participants. Participant details (full name,
+// gender, timezone, email, phone) are only revealed to the creator AFTER approval;
+// before that the creator only sees the username.
 func (h *Handler) loadInterests(r *http.Request, requestID uuid.UUID) ([]Interest, error) {
 	rows, err := h.pool.Query(r.Context(), `
-		select pi.id, pi.request_id, pi.user_id, u.username, u.full_name, u.gender, u.timezone, pi.status, pi.created_at
+		select pi.id, pi.request_id, pi.user_id, u.username, pi.status, pi.created_at,
+		       case when pi.status = 'approved' then u.full_name else '' end,
+		       case when pi.status = 'approved' then u.gender else null end,
+		       case when pi.status = 'approved' then u.timezone else null end,
+		       case when pi.status = 'approved' then u.email else null end,
+		       case when pi.status = 'approved' then u.phone else null end
 		from partner_interests pi
 		join users u on u.id = pi.user_id
 		where pi.request_id = $1
@@ -407,8 +418,8 @@ func (h *Handler) loadInterests(r *http.Request, requestID uuid.UUID) ([]Interes
 	out := []Interest{}
 	for rows.Next() {
 		var it Interest
-		if err := rows.Scan(&it.ID, &it.RequestID, &it.UserID, &it.Username, &it.FullName,
-			&it.Gender, &it.Timezone, &it.Status, &it.CreatedAt); err != nil {
+		if err := rows.Scan(&it.ID, &it.RequestID, &it.UserID, &it.Username, &it.Status, &it.CreatedAt,
+			&it.FullName, &it.Gender, &it.Timezone, &it.Email, &it.Phone); err != nil {
 			return nil, err
 		}
 		out = append(out, it)
