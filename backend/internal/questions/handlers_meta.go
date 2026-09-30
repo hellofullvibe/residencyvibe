@@ -1,6 +1,7 @@
 package questions
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/gulam/interviewprep/backend/internal/respond"
@@ -35,6 +36,7 @@ func (h *Handler) Meta(w http.ResponseWriter, r *http.Request) {
 		where array_length(programs, 1) > 0
 	`)
 	if err != nil {
+		log.Printf("meta error: %v", err)
 		respond.Error(w, http.StatusInternalServerError, "could not load meta")
 		return
 	}

@@ -3,6 +3,7 @@ package questions
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -97,6 +98,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 
 	rows, err := h.pool.Query(r.Context(), sql, args...)
 	if err != nil {
+		log.Printf("list questions error: %v", err)
 		respond.Error(w, http.StatusInternalServerError, "could not list questions")
 		return
 	}
