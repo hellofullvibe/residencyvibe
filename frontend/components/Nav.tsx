@@ -58,7 +58,7 @@ export default function Nav() {
             <Link
               key={l.href}
               href={l.href}
-              className={`flex items-center font-medium h-full  justify-center border-b-2 px-4 h-full transition-all ease-in-out duration-300 ${
+              className={`flex items-center font-medium h-full justify-center border-b-2 px-4 h-full transition-all ease-in-out duration-300 ${
                 pathname === l.href
                   ? "text-blue-700 border-blue-700"
                   : "text-slate-600 hover:bg-gray-50 border-transparent"
@@ -69,52 +69,46 @@ export default function Nav() {
           ))}
         </nav>
 
-        <div className="flex items-center gap-2 text-sm">
+        <div className="flex items-center h-full text-sm">
           {loading ? null : user ? (
             <>
               <Link
                 href="/account"
-                className={`hidden rounded-md px-3 py-1.5 sm:inline-block ${
+                className={`hidden sm:flex items-center justify-center h-full px-8 border-b-2 font-medium ${
                   pathname === "/account"
-                    ? "bg-slate-100 font-medium text-slate-900"
-                    : "text-slate-600 hover:bg-slate-50"
+                    ? "text-blue-700 border-blue-700"
+                    : "text-black hover:bg-gray-50 border-transparent"
                 }`}
               >
-                {user.username}
+                @{user.username}
               </Link>
-              <span className="rounded-md px-1 py-1.5 text-slate-600 sm:hidden">
-                {user.username}
+
+              <span className="flex items-center justify-center px-4 h-full text-black font-medium sm:hidden">
+                @{user.username}
               </span>
-              {/* Mobile menu icon after username */}
               <button
                 onClick={() => setMenuOpen((v) => !v)}
-                className="rounded-md px-2 py-1.5 text-slate-700 hover:bg-slate-100 sm:hidden"
+                className={`${menuOpen ? "text-blue-700" : "text-slate-700"}  px-4 h-full hover:bg-gray-50 sm:hidden`}
                 aria-label="Menu"
               >
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                   <path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
                 </svg>
               </button>
-              <button
-                onClick={handleLogout}
-                className="hidden rounded-md px-3 py-1.5 text-slate-600 hover:bg-slate-50 hover:text-slate-900 sm:inline-block"
-              >
-                Sign out
-              </button>
             </>
           ) : (
             <>
               <Link
                 href="/login"
-                className="rounded-md px-3 py-1.5 text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                className="h-full flex items-center justify-center px-8 text-blue-700 hover:bg-slate-50 font-semibold transition-all ease-in-out duration-300"
               >
-                Sign in
+                Sign In
               </Link>
               <Link
                 href="/signup"
-                className="rounded-md bg-slate-900 px-3 py-1.5 font-medium text-white hover:bg-slate-800"
+                className="h-full flex items-center justify-center px-8 text-white bg-blue-700 hover:bg-blue-800 font-semibold transition-all ease-in-out duration-300"
               >
-                Sign up
+                Join Now
               </Link>
               <button
                 onClick={() => setMenuOpen((v) => !v)}
