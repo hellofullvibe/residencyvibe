@@ -70,6 +70,7 @@ func main() {
 	mux.HandleFunc("GET /api/partners/{id}", auth.OptionalAuth(pool, partnerH.Get))
 	mux.HandleFunc("POST /api/partners/{id}/interested", auth.RequireAuth(pool, partnerH.Interested))
 	mux.HandleFunc("POST /api/partners/{id}/approve", auth.RequireAuth(pool, partnerH.Approve))
+	mux.HandleFunc("POST /api/partners/{id}/unapprove", auth.RequireAuth(pool, partnerH.Unapprove))
 	mux.HandleFunc("DELETE /api/partners/{id}", auth.RequireAuth(pool, partnerH.Delete))
 
 	handler := middleware.Logging(middleware.CORS(cfg.AllowedOrigin, mux))

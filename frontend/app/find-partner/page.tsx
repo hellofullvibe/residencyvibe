@@ -14,6 +14,7 @@ export default function FindPartnerPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showCreate, setShowCreate] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const loadWall = useCallback(async () => {
     try {
@@ -100,6 +101,34 @@ export default function FindPartnerPage() {
     }
   }
 
+  async function unapprove(r: PartnerRequest, participantUserId: string) {
+    try {
+      await api.post(`/api/partners/${r.id}/unapprove`, { user_id: participantUserId });
+      await loadMine();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Could not unapprove participant");
+    }
+  }
+
+  const pendingCount = mine.reduce(
+    (sum, r) => sum + (r.interests?.filter((i) => i.status === "interested").length ?? 0),
+    0
+  );
+
+  async function refresh() {
+    setRefreshing(true);
+    setError("");
+    try {
+      if (tab === "mine" && user) {
+        await loadMine();
+      } else {
+        await loadWall();
+      }
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
   const profileComplete =
     !!user?.gender && !!user?.timezone && !!user?.phone;
 
@@ -142,15 +171,27 @@ export default function FindPartnerPage() {
       )}
 
       {/* Tabs */}
-      <div className="mb-6 flex gap-1">
-        <Tab active={tab === "browse"} onClick={() => setTab("browse")}>
-          Browse sessions
-        </Tab>
-        {user && (
-          <Tab active={tab === "mine"} onClick={() => setTab("mine")}>
-            My requests
+      <div className="mb-6 flex items-center justify-between gap-2">
+        <div className="flex gap-1">
+          <Tab active={tab === "browse"} onClick={() => setTab("browse")}>
+            Browse sessions
           </Tab>
-        )}
+          {user && (
+            <Tab active={tab === "mine"} onClick={() => setTab("mine")}>
+              My requests ({pendingCount})
+            </Tab>
+          )}
+        </div>
+        <button
+          onClick={refresh}
+          disabled={refreshing}
+          className="flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-60"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className={refreshing ? "animate-spin" : ""}>
+            <path d="M20 12a8 8 0 1 1-2.34-5.66M20 3v6h-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          {refreshing ? "Refreshing…" : "Refresh"}
+        </button>
       </div>
 
       {error && (
@@ -189,6 +230,7 @@ export default function FindPartnerPage() {
                 key={r.id}
                 r={r}
                 onApprove={(uid) => approve(r, uid)}
+                onUnapprove={(uid) => unapprove(r, uid)}
                 onDelete={() => remove(r)}
               />
             ))
@@ -297,12 +339,17 @@ function WallCard({
 function MyRequestCard({
   r,
   onApprove,
+  onUnapprove,
   onDelete,
 }: {
   r: PartnerRequest;
   onApprove: (userId: string) => void;
+  onUnapprove: (userId: string) => void;
   onDelete: () => void;
 }) {
+  const approvedCount = r.interests?.filter((i) => i.status === "approved").length ?? 0;
+  const slotsLeft = r.max_participants - approvedCount;
+
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -322,6 +369,7 @@ function MyRequestCard({
       <div className="mt-3">
         <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
           Interested ({r.interested_count}/{r.max_participants})
+          {slotsLeft > 0 && <span className="ml-2 text-emerald-700">{slotsLeft} slot{slotsLeft > 1 ? "s" : ""} left</span>}
         </span>
         {!r.interests || r.interests.length === 0 ? (
           <p className="mt-1 text-sm text-slate-500">No one interested yet.</p>
@@ -333,10 +381,21 @@ function MyRequestCard({
                 className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2"
               >
                 <div className="text-sm">
-                  <span className="font-medium text-slate-900">{i.full_name || `@${i.username}`}</span>
-                  <span className="text-slate-500">@{i.username}</span>
-                  {i.gender && <span className="ml-2 text-slate-500">{i.gender}</span>}
-                  {i.timezone && <span className="ml-2 text-slate-500">{i.timezone}</span>}
+                  <div className="flex flex-wrap items-center gap-1">
+                    <span className="font-medium text-slate-900">
+                      {i.status === "approved" && i.full_name ? i.full_name : `@${i.username}`}
+                    </span>
+                    <span className="text-slate-500">@{i.username}</span>
+                    {i.gender && <span className="text-slate-500">· {i.gender}</span>}
+                    {i.specialty && <span className="text-slate-500">· {i.specialty}</span>}
+                    {i.timezone && <span className="text-slate-500">· {i.timezone}</span>}
+                  </div>
+                  {i.status === "approved" && (
+                    <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                      {i.email && <span>{i.email}</span>}
+                      {i.phone && <span>{i.phone}</span>}
+                    </div>
+                  )}
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   {i.status === "approved" ? (
@@ -362,13 +421,21 @@ function MyRequestCard({
                           WhatsApp
                         </a>
                       )}
+                      <button
+                        onClick={() => onUnapprove(i.user_id)}
+                        className="rounded-md border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-100"
+                        title="Free up a slot"
+                      >
+                        Unapprove
+                      </button>
                     </>
                   ) : (
                     <button
                       onClick={() => onApprove(i.user_id)}
-                      className="rounded-md bg-slate-900 px-3 py-1 text-xs font-medium text-white hover:bg-slate-800"
+                      disabled={slotsLeft <= 0}
+                      className="rounded-md bg-slate-900 px-3 py-1 text-xs font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
                     >
-                      Approve
+                      {slotsLeft > 0 ? "Approve" : "No slots"}
                     </button>
                   )}
                 </div>

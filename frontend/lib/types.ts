@@ -86,6 +86,7 @@ export interface PartnerInterest {
   full_name: string;
   gender?: string | null;
   timezone?: string | null;
+  specialty?: string | null;
   email?: string;
   phone?: string;
   status: "interested" | "approved";

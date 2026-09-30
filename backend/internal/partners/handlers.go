@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -56,6 +57,7 @@ type Interest struct {
 	FullName  string    `json:"full_name"`
 	Gender    *string   `json:"gender,omitempty"`
 	Timezone  *string   `json:"timezone,omitempty"`
+	Specialty *string   `json:"specialty,omitempty"`
 	Email     *string   `json:"email,omitempty"`
 	Phone     *string   `json:"phone,omitempty"`
 	Status    string    `json:"status"`
@@ -250,9 +252,84 @@ func (h *Handler) Interested(w http.ResponseWriter, r *http.Request) {
 	respond.JSON(w, http.StatusOK, item)
 }
 
-// Approve lets the creator approve an interested participant. Approved
-// participants can then see the creator's contact info.
+// Approve lets the creator approve an interested participant, up to the session's
+// max_participants. Approved participants can then see the creator's contact info.
 func (h *Handler) Approve(w http.ResponseWriter, r *http.Request) {
+	u := auth.UserFrom(r)
+	if u == nil {
+		respond.Error(w, http.StatusUnauthorized, "not authenticated")
+		return
+	}
+	id, err := uuid.Parse(r.PathValue("id"))
+	if err != nil {
+		respond.Error(w, http.StatusBadRequest, "invalid session id")
+		return
+	}
+	var in struct {
+		UserID uuid.UUID `json:"user_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+		respond.Error(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	var maxPart int
+	var targetStatus string
+	err = h.pool.QueryRow(r.Context(), `
+		select pr.max_participants, coalesce(pi.status, '')
+		from partner_requests pr
+		left join partner_interests pi on pi.request_id = pr.id and pi.user_id = $2
+		where pr.id = $1 and pr.user_id = $3`, id, in.UserID, u.ID,
+	).Scan(&maxPart, &targetStatus)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			respond.Error(w, http.StatusNotFound, "session not found or not yours")
+			return
+		}
+		log.Printf("partner approve load error: %v", err)
+		respond.Error(w, http.StatusInternalServerError, "could not approve participant")
+		return
+	}
+	if targetStatus == "" {
+		respond.Error(w, http.StatusNotFound, "interest not found")
+		return
+	}
+	if targetStatus == "approved" {
+		respond.JSON(w, http.StatusOK, map[string]string{"message": "approved"})
+		return
+	}
+
+	// Enforce the approval limit (max_participants).
+	var approvedCount int
+	if err := h.pool.QueryRow(r.Context(), `
+		select count(*) from partner_interests
+		where request_id = $1 and user_id <> $2 and status = 'approved'`,
+		id, in.UserID,
+	).Scan(&approvedCount); err != nil {
+		log.Printf("partner approve count error: %v", err)
+		respond.Error(w, http.StatusInternalServerError, "could not approve participant")
+		return
+	}
+	if approvedCount >= maxPart {
+		respond.Error(w, http.StatusBadRequest,
+			"approval limit reached (max "+strconv.Itoa(maxPart)+"). Unapprove someone first.")
+		return
+	}
+
+	_, err = h.pool.Exec(r.Context(), `
+		update partner_interests set status = 'approved'
+		where request_id = $1 and user_id = $2`, id, in.UserID)
+	if err != nil {
+		log.Printf("partner approve error: %v", err)
+		respond.Error(w, http.StatusInternalServerError, "could not approve participant")
+		return
+	}
+	respond.JSON(w, http.StatusOK, map[string]string{"message": "approved"})
+}
+
+// Unapprove lets the creator revert an approved participant back to "interested",
+// freeing up a slot for someone else.
+func (h *Handler) Unapprove(w http.ResponseWriter, r *http.Request) {
 	u := auth.UserFrom(r)
 	if u == nil {
 		respond.Error(w, http.StatusUnauthorized, "not authenticated")
@@ -273,20 +350,20 @@ func (h *Handler) Approve(w http.ResponseWriter, r *http.Request) {
 
 	tag, err := h.pool.Exec(r.Context(), `
 		update partner_interests pi
-		set status = 'approved'
+		set status = 'interested'
 		where pi.request_id = $1 and pi.user_id = $2
 		  and exists (select 1 from partner_requests pr where pr.id = $1 and pr.user_id = $3)`,
 		id, in.UserID, u.ID)
 	if err != nil {
-		log.Printf("partner approve error: %v", err)
-		respond.Error(w, http.StatusInternalServerError, "could not approve participant")
+		log.Printf("partner unapprove error: %v", err)
+		respond.Error(w, http.StatusInternalServerError, "could not unapprove participant")
 		return
 	}
 	if tag.RowsAffected() == 0 {
 		respond.Error(w, http.StatusNotFound, "interest not found or you are not the creator")
 		return
 	}
-	respond.JSON(w, http.StatusOK, map[string]string{"message": "approved"})
+	respond.JSON(w, http.StatusOK, map[string]string{"message": "unapproved"})
 }
 
 // Mine returns the current user's created sessions with their interested users.
@@ -395,15 +472,14 @@ func (h *Handler) withContact(r *http.Request, userID uuid.UUID, item Request) R
 	return item
 }
 
-// loadInterests returns a session's participants. Participant details (full name,
-// gender, timezone, email, phone) are only revealed to the creator AFTER approval;
-// before that the creator only sees the username.
+// loadInterests returns a session's participants. Before approval the creator sees
+// profile details (username, gender, specialty, timezone) but NOT contact info.
+// After approval the creator additionally sees full name, email and phone.
 func (h *Handler) loadInterests(r *http.Request, requestID uuid.UUID) ([]Interest, error) {
 	rows, err := h.pool.Query(r.Context(), `
 		select pi.id, pi.request_id, pi.user_id, u.username, pi.status, pi.created_at,
 		       case when pi.status = 'approved' then u.full_name else '' end,
-		       case when pi.status = 'approved' then u.gender else null end,
-		       case when pi.status = 'approved' then u.timezone else null end,
+		       u.gender, u.timezone, u.specialty,
 		       case when pi.status = 'approved' then u.email else null end,
 		       case when pi.status = 'approved' then u.phone else null end
 		from partner_interests pi
@@ -419,7 +495,7 @@ func (h *Handler) loadInterests(r *http.Request, requestID uuid.UUID) ([]Interes
 	for rows.Next() {
 		var it Interest
 		if err := rows.Scan(&it.ID, &it.RequestID, &it.UserID, &it.Username, &it.Status, &it.CreatedAt,
-			&it.FullName, &it.Gender, &it.Timezone, &it.Email, &it.Phone); err != nil {
+			&it.FullName, &it.Gender, &it.Timezone, &it.Specialty, &it.Email, &it.Phone); err != nil {
 			return nil, err
 		}
 		out = append(out, it)

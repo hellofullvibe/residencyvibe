@@ -43,7 +43,7 @@ export default function Nav() {
         <Link href="/" className="flex items-center gap-2 font-semibold text-slate-900">
           <Image
             src="/logo.png"
-            alt="ResidencyPrep"
+            alt="Residency Vibe"
             width={209}
             height={101}
             className="h-8 w-auto"
