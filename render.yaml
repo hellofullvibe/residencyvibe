@@ -14,6 +14,6 @@ services:
         value: 10000
       # Set these in the Render dashboard after the first deploy:
       - key: DATABASE_URL
-        sync: false
+        sync: postgresql://postgres.inujashaktqujsvpconq:Sopno.na.11@aws-0-us-east-1.pooler.supabase.com:6543/postgres
       - key: ALLOWED_ORIGIN
-        sync: false
+        sync: https://residencyvibe.vercel.app,https://www.residencyvibe.space,http://localhost:3000
