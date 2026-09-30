@@ -23,6 +23,10 @@ type User struct {
 	FullName  string    `json:"full_name"`
 	Email     string    `json:"email"`
 	Username  string    `json:"username"`
+	Gender    *string   `json:"gender"`
+	Timezone  *string   `json:"timezone"`
+	Phone     *string   `json:"phone"`
+	Specialty *string   `json:"specialty"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
@@ -87,12 +91,12 @@ func DestroySession(ctx context.Context, pool *pgxpool.Pool, token string) error
 func UserFromToken(ctx context.Context, pool *pgxpool.Pool, token string) (*User, error) {
 	var u User
 	err := pool.QueryRow(ctx, `
-		select u.id, u.full_name, u.email, u.username, u.created_at
+		select u.id, u.full_name, u.email, u.username, u.gender, u.timezone, u.phone, u.specialty, u.created_at
 		from sessions s
 		join users u on u.id = s.user_id
 		where s.token = $1 and s.expires_at > now()`,
 		token,
-	).Scan(&u.ID, &u.FullName, &u.Email, &u.Username, &u.CreatedAt)
+	).Scan(&u.ID, &u.FullName, &u.Email, &u.Username, &u.Gender, &u.Timezone, &u.Phone, &u.Specialty, &u.CreatedAt)
 	if err != nil {
 		return nil, err
 	}

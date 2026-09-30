@@ -9,6 +9,7 @@ import (
 	"github.com/gulam/interviewprep/backend/internal/config"
 	"github.com/gulam/interviewprep/backend/internal/db"
 	"github.com/gulam/interviewprep/backend/internal/middleware"
+	"github.com/gulam/interviewprep/backend/internal/partners"
 	"github.com/gulam/interviewprep/backend/internal/questions"
 	"github.com/gulam/interviewprep/backend/internal/search"
 	"github.com/joho/godotenv"
@@ -32,6 +33,7 @@ func main() {
 	authH := auth.NewHandler(pool)
 	questionH := questions.NewHandler(pool)
 	searchH := search.NewHandler(pool)
+	partnerH := partners.NewHandler(pool)
 
 	mux := http.NewServeMux()
 
@@ -40,6 +42,7 @@ func main() {
 	mux.HandleFunc("POST /api/auth/login", authH.Login)
 	mux.HandleFunc("POST /api/auth/logout", authH.Logout)
 	mux.HandleFunc("GET /api/auth/me", auth.RequireAuth(pool, authH.Me))
+	mux.HandleFunc("PUT /api/account/profile", auth.RequireAuth(pool, authH.UpdateProfile))
 	mux.HandleFunc("DELETE /api/account", auth.RequireAuth(pool, authH.DeleteAccount))
 
 	// --- questions ---
@@ -59,6 +62,15 @@ func main() {
 
 	// --- search ---
 	mux.HandleFunc("GET /api/search", auth.OptionalAuth(pool, searchH.Search))
+
+	// --- find partner ---
+	mux.HandleFunc("GET /api/partners", auth.OptionalAuth(pool, partnerH.List))
+	mux.HandleFunc("POST /api/partners", auth.RequireAuth(pool, partnerH.Create))
+	mux.HandleFunc("GET /api/partners/mine", auth.RequireAuth(pool, partnerH.Mine))
+	mux.HandleFunc("GET /api/partners/{id}", auth.OptionalAuth(pool, partnerH.Get))
+	mux.HandleFunc("POST /api/partners/{id}/interested", auth.RequireAuth(pool, partnerH.Interested))
+	mux.HandleFunc("POST /api/partners/{id}/approve", auth.RequireAuth(pool, partnerH.Approve))
+	mux.HandleFunc("DELETE /api/partners/{id}", auth.RequireAuth(pool, partnerH.Delete))
 
 	handler := middleware.Logging(middleware.CORS(cfg.AllowedOrigin, mux))
 
