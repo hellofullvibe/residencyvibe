@@ -40,8 +40,14 @@ export default function FindPartnerPage() {
     let cancelled = false;
     async function start() {
       try {
-        const data = await api.get<PartnerRequest[]>("/api/partners");
-        if (!cancelled) setWall(data);
+        const [wData, mData] = await Promise.all([
+          api.get<PartnerRequest[]>("/api/partners"),
+          user ? api.get<PartnerRequest[]>("/api/partners/mine") : Promise.resolve([])
+        ]);
+        if (!cancelled) {
+          setWall(wData);
+          if (user) setMine(mData);
+        }
       } catch (err) {
         if (!cancelled)
           setError(err instanceof ApiError ? err.message : "Could not load sessions");
@@ -53,25 +59,7 @@ export default function FindPartnerPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
-
-  useEffect(() => {
-    if (tab !== "mine" || !user) return;
-    let cancelled = false;
-    async function start() {
-      try {
-        const data = await api.get<PartnerRequest[]>("/api/partners/mine");
-        if (!cancelled) setMine(data);
-      } catch (err) {
-        if (!cancelled)
-          setError(err instanceof ApiError ? err.message : "Could not load your sessions");
-      }
-    }
-    start();
-    return () => {
-      cancelled = true;
-    };
-  }, [tab, user]);
+  }, [user]);
 
   async function expressInterest(r: PartnerRequest) {
     if (!user) return;
@@ -115,6 +103,7 @@ export default function FindPartnerPage() {
     (sum, r) => sum + (r.interests?.filter((i) => i.status === "interested").length ?? 0),
     0
   );
+
 
   async function refresh() {
     setRefreshing(true);
@@ -194,10 +183,7 @@ export default function FindPartnerPage() {
 
       </div>
 
-      
-
-
-      
+    
 
       {/* Tabs */}
       <div className="w-full mx-auto max-w-6xl flex gap-4 pt-8 px-4 flex items-center justify-between">
@@ -224,7 +210,7 @@ export default function FindPartnerPage() {
         </button>
       </div>
 
-      <div className="w-full mx-auto max-w-3xl gap-4 pt-8 px-4">
+      <div className="w-full mx-auto max-w-3xl gap-4 pt-8 px-4 pb-16">
         {error && (
         <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
       )}
@@ -299,7 +285,7 @@ function WallCard({
   onInterested: () => void;
 }) {
   const canJoin = user && profileComplete && !r.is_mine && !r.my_interest;
-  const contactVisible = user && (r.my_interest === "approved" || r.is_mine);
+  const contactVisible = user && (r.my_interest === "approved");
 
   return (
     <div className="flex justify-between flex-col border border-slate-100 bg-white px-6 py-6 transition-all ease-in-out duration-300 hover:bg-gray-100 hover:border-slate-200">
@@ -361,30 +347,38 @@ function WallCard({
           <span className="h-11 text-sm rounded-full px-4 flex items-center justify-center gap-1 border cursor-pointer font-medium transition-all ease-in-out duration-300 bg-white text-amber-600 border-slate-100">Complete profile to join</span>
         ) : null}
 
+      </div>
         {contactVisible && r.creator_email && (
-          <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
+          <div className="mt-4 flex flex-col items-center gap-8 sm:gap-4 text-sm text-slate-600 border-t border-slate-100 pt-4">
+            <div className="flex items-center gap-2 w-full">
             <span>{r.creator_name}</span>
             <span className="text-slate-400">{r.creator_email}</span>
             {r.creator_phone && <span className="text-slate-400">{r.creator_phone}</span>}
-            <a
-              href={`mailto:${r.creator_email}?subject=${encodeURIComponent("Find Partner: mock interview session")}`}
-              className="h-11 text-sm rounded-full px-4 text-blue-700 flex items-center justify-center gap-1 border cursor-pointer font-medium transition-all ease-in-out duration-300 bg-white border-slate-100"
-            >
-              Email
-            </a>
-            {r.creator_phone && (
-              <a
-                href={`https://wa.me/${r.creator_phone.replace(/\D/g, "")}`}
-                target="_blank"
-                rel="noreferrer"
-                className="h-11 text-sm rounded-full px-4 text-emerald-700 flex items-center justify-center gap-1 border cursor-pointer font-medium transition-all ease-in-out duration-300 bg-white border-slate-100"
-              >
-                WhatsApp
-              </a>
-            )}
+            </div>
+
+            <div className="flex items-center justify-between gap-2 w-full">
+                      {r.creator_email && (
+                        <a
+                          href={`mailto:${r.creator_email}?subject=${encodeURIComponent("Find Partner: mock interview session")}`}
+                          className="h-11 text-sm rounded-full px-4 text-blue-700 flex items-center justify-center gap-1 border cursor-pointer font-medium transition-all ease-in-out duration-300 bg-white border-slate-100 w-full"
+                        >
+                          Email
+                        </a>
+                      )}
+                      {r.creator_phone && (
+                        <a
+                          href={`https://wa.me/${r.creator_phone.replace(/\D/g, "")}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="h-11 text-sm rounded-full px-4 text-emerald-700 flex items-center justify-center gap-1 border cursor-pointer font-medium transition-all ease-in-out duration-300 bg-white border-slate-100 w-full"
+                        >
+                          WhatsApp
+                        </a>
+                      )}
+                      </div>
+      
           </div>
         )}
-      </div>
     </div>
   );
 }
@@ -486,7 +480,7 @@ function MyRequestCard({
                   {i.status === "approved" ? (
                     <div className="w-full flex items-center justify-between gap-4 lg:gap-2 flex-wrap w-full">
 
-                      <div className="flex items-center  justify-between gap-2 w-full lg:w-auto">
+                      <div className="flex items-center justify-between gap-2 w-full lg:w-auto">
                       {i.email && (
                         <a
                           href={`mailto:${i.email}?subject=${encodeURIComponent("Find Partner: mock interview session")}`}
