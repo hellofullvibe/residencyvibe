@@ -5,7 +5,7 @@ import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
 import type { PartnerRequest } from "@/lib/types";
 import { useAuth } from "@/lib/auth";
-import { Add01Icon } from "hugeicons-react";
+import { Add01Icon, CaduceusIcon, Calendar04Icon, Refresh01Icon, Time03Icon, TimeZoneIcon } from "hugeicons-react";
 
 export default function FindPartnerPage() {
   const { user } = useAuth();
@@ -140,20 +140,17 @@ export default function FindPartnerPage() {
           <div className="flex flex-col gap-8 items-center justify-center px-6 lg:px-0">
             <div className="flex flex-col items-center justify-center gap-2">
               <h5 className="max-w-sm text-center font-semibold text-blue-700 text-xs uppercase tracking-wide">
-                Questions That Asked In Interviews
+                Practice Together
               </h5>
               <h1 className="mx-auto max-w-2xl text-4xl font-bold tracking-tight text-black sm:text-5xl">
                 Find Partner
               </h1>
             </div>
             <p className="max-w-xl text-center text-slate-600">
-              Browse questions by category, search for specific questions, and
-              learn from experiences shared by other applicants. Save questions
-              you want to practice and build your own interview preparation
-              list.
+              Connect with other residents to practice interviews, exchange feedback, and build confidence together. Find a practice partner or join a session that fits your schedule.
             </p>
           </div>
-
+{user ? (
           <div className="w-full px-6 flex items-center justify-center lg:px-0">
             <button
               onClick={() => setShowCreate(true)}
@@ -162,48 +159,25 @@ export default function FindPartnerPage() {
               <Add01Icon size={20} strokeWidth={2} />
               <span>Create request</span>
             </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Find Partner</h1>
-          <p className="text-sm text-slate-600">
-            Meet residents to practice interviews together.
-          </p>
-        </div>
-        {user && (
-          <button
-            onClick={() => setShowCreate(true)}
-            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
-          >
-            + Create request
-          </button>
-        )}
-      </div>
-
-      {!user && (
-        <div className="mb-6 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800">
-          <Link href="/signup" className="font-medium underline">
-            Create an account
+          </div>):(
+              <div className="mb-6 bg-blue-50 px-4 text-center inline-block py-4 gap-1 text-sm text-slate-700">
+          <Link href="/signup" className="font-semibold underline text-blue-700">
+            Join now
           </Link>{" "}
-          to create or join a partner session.
+          to create or participate in a partner session.
         </div>
-      )}
+          )}
 
-      {user && !profileComplete && (
-        <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          Complete your{" "}
-          <Link href="/account" className="font-medium underline">
+          {user && !profileComplete && (
+        <div className="mb-6 bg-amber-50 px-4 text-center inline-block py-4 gap-1 text-sm text-amber-700">
+  Complete your{" "}
+          <Link href="/account" className="font-semibold underline text-amber-700">
             profile
           </Link>{" "}
           (gender, timezone, phone) to create or join sessions.
         </div>
       )}
-
-      {/* Tabs */}
-      <div className="mb-6 flex items-center justify-between gap-2">
+      <div className="flex items-center">
         <div className="flex gap-1">
           <Tab active={tab === "browse"} onClick={() => setTab("browse")}>
             Browse sessions
@@ -214,19 +188,44 @@ export default function FindPartnerPage() {
             </Tab>
           )}
         </div>
+      </div>
+        </div>
+
+
+      </div>
+
+      
+
+
+      
+
+      {/* Tabs */}
+      <div className="w-full mx-auto max-w-6xl flex gap-4 pt-8 px-4 flex items-center justify-between">
+        <div>
+          {tab === "browse" && (
+          <h3 className="font-bold leading-snug text-black flex-1" >
+            Browse sessions
+          </h3>)}
+          {user && tab === "mine" && (
+            <h3 className="font-bold leading-snug text-black flex-1">
+              My requests ({pendingCount})
+            </h3>
+          )}
+        </div>
         <button
           onClick={refresh}
           disabled={refreshing}
-          className="flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-60"
+          className="flex items-center gap-2 border border-slate-100 bg-gray-100 px-8 h-14 text-sm text-slate-700 hover:bg-blue-700 hover:text-white cursor-pointer disabled:opacity-60 transition-all ease-in-out duration-300"
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className={refreshing ? "animate-spin" : ""}>
-            <path d="M20 12a8 8 0 1 1-2.34-5.66M20 3v6h-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          {refreshing ? "Refreshing…" : "Refresh"}
+          <Refresh01Icon size={20} strokeWidth={2} className={refreshing ? "animate-spin" : ""} />
+          <span>
+          {refreshing ? "Refreshing" : "Refresh"}
+          </span>
         </button>
       </div>
 
-      {error && (
+      <div className="w-full mx-auto max-w-3xl gap-4 pt-8 px-4">
+        {error && (
         <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
       )}
 
@@ -281,6 +280,9 @@ export default function FindPartnerPage() {
           }}
         />
       )}
+      </div>
+
+      
     </div>
   );
 }
@@ -300,45 +302,65 @@ function WallCard({
   const contactVisible = user && (r.my_interest === "approved" || r.is_mine);
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5">
+    <div className="flex justify-between flex-col border border-slate-100 bg-white px-6 py-6 transition-all ease-in-out duration-300 hover:bg-gray-100 hover:border-slate-200">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <span className="font-medium text-slate-900">@{r.creator_username}</span>
-          {r.gender && <span className="text-sm text-slate-500">{r.gender}</span>}
+          <span className="font-bold text-black">@{r.creator_username}</span>
+          <span className="text-sm text-slate-400">•</span>
+          {r.gender && <span className="text-sm text-slate-700">{r.gender}</span>}
         </div>
-        <span className="text-sm text-slate-500">
+        <span className="text-sm text-blue-700 font-medium">
           {r.interested_count}/{r.max_participants} interested
         </span>
       </div>
 
-      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-600">
-        <span>🗓 {r.session_date}</span>
-        <span>🕐 {r.session_time}</span>
-        <span>🌍 {r.timezone}</span>
-        {r.specialty && <span>⚕ {r.specialty}</span>}
+      <div className="w-full mt-4 flex flex-wrap gap-2 text-xs text-slate-700 font-medium">
+        <div className="flex items-center justify-center sm:justify-start gap-2 h-11 bg-gray-50 px-4 flex-1 whitespace-nowrap">
+          <Calendar04Icon size={16} strokeWidth={2}/>
+          <span>{r.session_date}</span>
+        </div>
+        <div className="flex items-center justify-center sm:justify-start gap-2 h-11 bg-gray-50 px-4 flex-1 whitespace-nowrap">
+          <Time03Icon size={16} strokeWidth={2}/>
+          <span>{r.session_time}</span>
+        </div>
+        <div className="flex items-center justify-center sm:justify-start gap-2 h-11 bg-gray-50 px-4 flex-1 whitespace-nowrap">
+          <TimeZoneIcon size={16} strokeWidth={2}/>
+          <span>{r.timezone}</span>
+        </div>
+        {r.specialty &&
+        <div className="flex items-center justify-center sm:justify-start gap-2 h-11 bg-gray-50 px-4 flex-1 whitespace-nowrap">
+          <CaduceusIcon size={16} strokeWidth={2}/>
+          <span>{r.specialty}</span>
+        </div>}
       </div>
 
-      {r.notes && <p className="mt-2 text-sm text-slate-700">{r.notes}</p>}
+      {r.notes && 
+      <div className="w-full mt-4 inline-flex gap-2 items-start">
+  <span className="text-sm text-slate-400 font-medium">Note:</span>
+  <p className="text-sm text-slate-700 font-medium">{r.notes}</p>
+</div>
+      }
 
       <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
         {r.my_interest ? (
-          <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-800">
+          <span className={`h-11 text-sm rounded-full px-4  flex items-center justify-center gap-1 border cursor-pointer font-medium transition-all ease-in-out duration-300 ${r.my_interest === "approved" ? "bg-white text-blue-700 border-blue-100" : "bg-gray-50 text-slate-400 border-slate-100"}`}>
             {r.my_interest === "approved" ? "Approved" : "Interested"}
           </span>
         ) : r.is_mine ? (
-          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+          <span className="h-11 text-sm rounded-full px-4 flex items-center justify-center gap-1 border cursor-pointer font-medium transition-all ease-in-out duration-300 bg-white text-black border-slate-100">
             Your session
           </span>
         ) : canJoin ? (
           <button
             onClick={onInterested}
-            className="rounded-lg bg-blue-700 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-800"
+            className="h-11 text-sm rounded-full px-4 text-blue-700 flex items-center justify-center gap-1 border cursor-pointer font-medium transition-all ease-in-out duration-300 bg-white border-slate-100"
           >
             I&apos;m interested
           </button>
         ) : user && !profileComplete ? (
-          <span className="text-xs text-amber-700">Complete profile to join</span>
+          <span className="h-11 text-sm rounded-full px-4 flex items-center justify-center gap-1 border cursor-pointer font-medium transition-all ease-in-out duration-300 bg-white text-amber-600 border-slate-100">Complete profile to join</span>
         ) : null}
+
 
         {contactVisible && r.creator_email && (
           <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
@@ -347,7 +369,7 @@ function WallCard({
             {r.creator_phone && <span className="text-slate-400">{r.creator_phone}</span>}
             <a
               href={`mailto:${r.creator_email}?subject=${encodeURIComponent("Find Partner: mock interview session")}`}
-              className="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+              className="h-11 text-sm rounded-full px-4 text-blue-700 flex items-center justify-center gap-1 border cursor-pointer font-medium transition-all ease-in-out duration-300 bg-white border-slate-100"
             >
               Email
             </a>
@@ -356,7 +378,7 @@ function WallCard({
                 href={`https://wa.me/${r.creator_phone.replace(/\D/g, "")}`}
                 target="_blank"
                 rel="noreferrer"
-                className="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-100"
+                className="h-11 text-sm rounded-full px-4 text-emerald-700 flex items-center justify-center gap-1 border cursor-pointer font-medium transition-all ease-in-out duration-300 bg-white border-slate-100"
               >
                 WhatsApp
               </a>
@@ -384,27 +406,48 @@ function MyRequestCard({
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-5">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm font-medium text-slate-900">
-          <span>🗓 {r.session_date}</span>
-          <span>🕐 {r.session_time}</span>
-          <span>🌍 {r.timezone}</span>
-        </div>
+
+      <div className="w-full flex items-center justify-between">
+        <h4 className="text-sm text-slate-900 font-medium">Interested ({r.interested_count}/{r.max_participants})</h4>
         <button
           onClick={onDelete}
-          className="rounded-md px-2 py-1 text-xs text-red-600 hover:bg-red-50"
+          className="h-11 text-sm px-4 text-rose-600 flex items-center justify-center gap-1 cursor-pointer font-medium transition-all ease-in-out duration-300 bg-rose-600/5"
         >
           Delete
         </button>
       </div>
 
-      <div className="mt-3">
-        <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
-          Interested ({r.interested_count}/{r.max_participants})
+        
+
+        <div className="w-full mt-4 flex flex-wrap gap-2 text-xs text-slate-700 font-medium">
+        <div className="flex items-center justify-center sm:justify-start gap-2 h-11 bg-gray-50 px-4 flex-1 whitespace-nowrap">
+          <Calendar04Icon size={16} strokeWidth={2}/>
+          <span>{r.session_date}</span>
+        </div>
+        <div className="flex items-center justify-center sm:justify-start gap-2 h-11 bg-gray-50 px-4 flex-1 whitespace-nowrap">
+          <Time03Icon size={16} strokeWidth={2}/>
+          <span>{r.session_time}</span>
+        </div>
+        <div className="flex items-center justify-center sm:justify-start gap-2 h-11 bg-gray-50 px-4 flex-1 whitespace-nowrap">
+          <TimeZoneIcon size={16} strokeWidth={2}/>
+          <span>{r.timezone}</span>
+        </div>
+        {r.specialty &&
+        <div className="flex items-center justify-center sm:justify-start gap-2 h-11 bg-gray-50 px-4 flex-1 whitespace-nowrap">
+          <CaduceusIcon size={16} strokeWidth={2}/>
+          <span>{r.specialty}</span>
+        </div>}
+      </div>
+
+
+      <div className="mt-8">
+        <span className="text-sm font-medium tracking-wide text-slate-500">
+          Participants
           {slotsLeft > 0 && <span className="ml-2 text-emerald-700">{slotsLeft} slot{slotsLeft > 1 ? "s" : ""} left</span>}
         </span>
+
         {!r.interests || r.interests.length === 0 ? (
-          <p className="mt-1 text-sm text-slate-500">No one interested yet.</p>
+          <p className="mt-1 text-sm text-slate-400 text-center py-4 w-full bg-slate-50">No one interested yet.</p>
         ) : (
           <div className="mt-2 space-y-2">
             {r.interests.map((i) => (
@@ -668,10 +711,10 @@ function Tab({
   return (
     <button
       onClick={onClick}
-      className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
+      className={`whitespace-nowrap px-4 h-14 font-medium transition-all ease-in-out duration-300 cursor-pointer border-b-2 ${
         active
-          ? "bg-slate-900 text-white"
-          : "bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50"
+          ? "text-blue-700 border-blue-700"
+          : "text-slate-700 hover:bg-slate-50 border-transparent"
       }`}
     >
       {children}

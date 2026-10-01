@@ -15,7 +15,6 @@ export default function QuestionCard({
 }) {
   return (
     <div
-      
       className="flex justify-between flex-col border border-slate-100 bg-white px-6 py-6 transition-all ease-in-out duration-300 hover:bg-gray-100 hover:border-slate-200"
     >
       <Link
