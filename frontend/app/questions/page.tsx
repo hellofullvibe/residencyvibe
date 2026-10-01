@@ -7,6 +7,7 @@ import type { Meta, Question } from "@/lib/types";
 import { useAuth } from "@/lib/auth";
 import QuestionCard from "@/components/QuestionCard";
 import AddQuestionModal from "@/components/AddQuestionModal";
+import { Add01Icon, ArrowDown01Icon, Cancel01Icon, LayoutGridIcon, ListViewIcon } from "hugeicons-react";
 
 type Filters = {
   category: string;
@@ -25,7 +26,7 @@ const initialFilters: Filters = {
   institutional_setting: "",
   frequency: "",
   min_star: "",
-  sort: "newest",
+  sort: "",
 };
 
 export default function QuestionsPage() {
@@ -87,24 +88,41 @@ export default function QuestionsPage() {
   );
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Question Bank</h1>
-          <p className="text-sm text-slate-600">
-            {loading ? "…" : `${questions.length} question${questions.length === 1 ? "" : "s"}`}
-          </p>
+    <div className="w-full min-h-screen">
+      <div className="w-full bg-white">
+
+      <div className="max-w-6xl mx-auto flex flex-col items-center justify-center gap-8 pt-25">
+        <div className="flex flex-col gap-8 items-center justify-center px-6 sm:px-0">
+        <div className="flex flex-col items-center justify-center gap-2">
+          <h5 className="max-w-sm text-center font-semibold text-blue-700 text-xs uppercase tracking-wide">
+          Questions That Asked In Interviews
+        </h5>
+          <h1 className="mx-auto max-w-2xl text-4xl font-bold tracking-tight text-black sm:text-5xl">
+          Question Bank
+        </h1>
+
         </div>
+        <p className="max-w-xl text-center text-slate-600">
+          Browse questions by category, search for specific questions, and learn from experiences shared by other applicants. Save questions you want to practice and build your own interview preparation list.
+        </p>
+          {/* <p className="text-sm text-slate-600">
+            {loading ? "…" : `${questions.length} question${questions.length === 1 ? "" : "s"}`}
+          </p> */}
+        </div>
+
+        <div className="w-full px-6 flex items-center justify-center sm:px-0">
+
         <button
           onClick={() => setShowAdd(true)}
-          className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+          className="cursor-pointer bg-blue-700/10 w-full sm:w-auto sm:px-8 h-14 flex items-center justify-center font-semibold text-blue-700 hover:bg-blue-800 hover:text-white transition-all ease-in-out duration-300 gap-2"
         >
-          + Add question
+          <Add01Icon size={20} strokeWidth={2} />
+          <span>Add a Question
+            </span>
         </button>
-      </div>
+        </div>
 
-      {/* Category tabs */}
-      <div className="mb-4 flex gap-1 overflow-x-auto pb-1">
+        <div className="flex w-sm sm:w-full sm:items-center justify-start sm:justify-center overflow-x-auto scrollbar-none px-6 sm:px-0">
         <Tab
           active={filters.category === ""}
           onClick={() => setFilter("category", "")}
@@ -122,63 +140,31 @@ export default function QuestionsPage() {
         ))}
       </div>
 
+      </div>
+      </div>
+
+      {/* Category tabs */}
+      
+
       {/* Toolbar */}
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={() => setFiltersOpen((v) => !v)}
-            className={`rounded-lg border px-3 py-2 text-sm font-medium ${
-              filtersOpen || hasActiveFilters
-                ? "border-slate-900 bg-slate-900 text-white"
-                : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
-            }`}
-          >
-            Filters {hasActiveFilters ? "●" : ""}
-          </button>
-          {hasActiveFilters && (
+
+      <div className="w-full mx-auto max-w-6xl flex gap-4 pt-8">
+
+        <div className="hidden sm:block max-w-xs w-full bg-white px-6 pt-4 pb-8 flex gap-4">
+          <div className="flex items-center justify-between h-11">
+          <h3 className="text-base font-semibold">Select Filter</h3>
+          
+             {hasActiveFilters && (
             <button
               onClick={() => setFilters({ ...initialFilters })}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
+              className="bg-rose-600/5 cursor-pointer text-rose-600 px-4 h-11 text-sm hover:text-white hover:bg-rose-600 transition-all ease-in-out duration-300"
             >
               Clear
             </button>
           )}
-          <label className="flex items-center gap-2 text-sm text-slate-600">
-            Sort
-            <select
-              value={filters.sort}
-              onChange={(e) => setFilter("sort", e.target.value)}
-              className="rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm outline-none focus:border-slate-500"
-            >
-              <option value="newest">Newest</option>
-              <option value="oldest">Oldest</option>
-              <option value="star">Star rating</option>
-              <option value="frequency">Frequency</option>
-            </select>
-          </label>
-        </div>
+          </div>
 
-        <div className="flex overflow-hidden rounded-lg border border-slate-300">
-          <button
-            onClick={() => setView("grid")}
-            className={`px-3 py-2 text-sm ${view === "grid" ? "bg-slate-900 text-white" : "bg-white text-slate-600 hover:bg-slate-50"}`}
-            title="Card view"
-          >
-            ⊞
-          </button>
-          <button
-            onClick={() => setView("list")}
-            className={`px-3 py-2 text-sm ${view === "list" ? "bg-slate-900 text-white" : "bg-white text-slate-600 hover:bg-slate-50"}`}
-            title="List view"
-          >
-            ≡
-          </button>
-        </div>
-      </div>
-
-      {/* Collapsible filter panel */}
-      {filtersOpen && (
-        <div className="mb-6 grid grid-cols-2 gap-3 rounded-xl border border-slate-200 bg-white p-4 sm:grid-cols-3 lg:grid-cols-4">
+        <div className="mt-4 flex flex-col gap-4">
           <Select
             label="Specialty"
             value={filters.specialty}
@@ -210,7 +196,113 @@ export default function QuestionsPage() {
             options={["1", "2", "3", "4", "5"]}
           />
         </div>
-      )}
+        </div>
+
+        <div className="flex-1 px-6 sm:px-0">
+          <div className="w-full mx-auto max-w-6xl flex flex-wrap items-center justify-between gap-2 pb-4 mb-8 border-b border-slate-100 sm:border-transparent">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => setFiltersOpen((v) => !v)}
+            className={`px-4 h-11 text-sm font-medium border cursor-pointer transition-all ease-in-out duration-300 ${
+              filtersOpen || hasActiveFilters
+                ? "bg-blue-700 text-white border-transparent"
+                : "bg-white text-slate-700 border-slate-100"
+            }`}
+          >
+            Filters {hasActiveFilters ? "●" : ""}
+          </button>
+          
+          <div className="relative flex items-center">
+            <select
+              value={filters.sort}
+              onChange={(e) => setFilter("sort", e.target.value)}
+              className="appearance-none border border-slate-100 bg-white font-medium h-11 pl-4 pr-8 text-sm text-slate-700 outline-none focus:border-slate-400 cursor-pointer"
+            >
+              <option value="">Sort by</option>
+              <option value="newest">Newest</option>
+              <option value="oldest">Oldest</option>
+              <option value="star">Star rating</option>
+              <option value="frequency">Frequency</option>
+            </select>
+            <ArrowDown01Icon size={16} strokeWidth={2} className="pointer-events-none absolute right-2 text-slate-500"/>
+          </div>
+        </div>
+
+        <div className="flex border border-slate-100 cursor-pointer">
+          <button
+            onClick={() => setView("grid")}
+            className={`h-11 w-11 flex items-center justify-center text-sm cursor-pointer transition-all ease-in-out duration-300 ${view === "grid" ? "bg-blue-700 text-white" : "bg-white text-slate-400"}`}
+            title="Card view"
+          >
+            <LayoutGridIcon size={16} strokeWidth={2}/>
+          </button>
+          <button
+            onClick={() => setView("list")}
+            className={`h-11 w-11 flex items-center justify-center text-sm cursor-pointer transition-all ease-in-out duration-300 ${view === "list" ? "bg-blue-700 text-white" : "bg-white text-slate-400"}`}
+            title="List view"
+          >
+            <ListViewIcon size={16} strokeWidth={2}/>
+          </button>
+        </div>
+      </div>
+
+       {filtersOpen && (
+       <div className="sm:hidden pt-4 pb-8 border-b border-slate-100 mb-8 flex flex-col gap-4">
+        <div className="flex items-center justify-between h-11">
+          <h3 className="text-base font-semibold">Select Filter</h3>
+          <div className="flex items-center gap-2">
+             {hasActiveFilters && (
+            <button
+              onClick={() => setFilters({ ...initialFilters })}
+className="bg-rose-600/5 cursor-pointer text-rose-600 px-4 h-11 text-sm hover:text-white hover:bg-rose-600 transition-all ease-in-out duration-300"
+            >
+              Clear
+            </button>
+          )}
+            <button
+              onClick={() => setFiltersOpen(false)}
+              className="bg-white border border-slate-300 h-11 w-11 flex items-center justify-center  text-slate-600 hover:bg-blue-700 hover:text-white transition-all ease-in-out duration-300"
+            >
+              <Cancel01Icon strokeWidth={2} size={20} />
+            </button>
+          </div>
+          </div>
+          <div className="w-full flex flex-col gap-4">
+
+          <ProgramSelect
+            label="Program"
+            value={filters.program}
+            onChange={(v) => setFilter("program", v)}
+            options={(meta?.programs || []).sort()}
+          />
+
+          <Select
+            label="Specialty"
+            value={filters.specialty}
+            onChange={(v) => setFilter("specialty", v)}
+            options={meta?.specialties || []}
+          />
+          <Select
+            label="Setting"
+            value={filters.institutional_setting}
+            onChange={(v) => setFilter("institutional_setting", v)}
+            options={meta?.institutional_settings || []}
+          />
+          <Select
+            label="Frequency"
+            value={filters.frequency}
+            onChange={(v) => setFilter("frequency", v)}
+            options={meta?.frequencies || []}
+          />
+          <Select
+            label="Min star"
+            value={filters.min_star}
+            onChange={(v) => setFilter("min_star", v)}
+            options={["1", "2", "3", "4", "5"]}
+          />
+          </div>
+        </div>
+        )}
 
       {!user && (
         <div className="mb-6 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800">
@@ -229,7 +321,7 @@ export default function QuestionsPage() {
         <p className="py-10 text-center text-slate-500">Loading questions…</p>
       ) : questions.length === 0 ? (
         <p className="py-10 text-center text-slate-500">
-          No questions match your filters. Try adding one!
+          Something went wrong. There are no questions matching your filters. Try adjusting the filers!
         </p>
       ) : view === "grid" ? (
         <div className="grid gap-4 sm:grid-cols-2">
@@ -245,6 +337,10 @@ export default function QuestionsPage() {
         </div>
       )}
 
+        </div>
+
+      </div>
+
       {showAdd && (
         <AddQuestionModal
           meta={meta}
@@ -258,6 +354,9 @@ export default function QuestionsPage() {
     </div>
   );
 }
+
+// =============================================== Additional Functions ==============================================
+
 
 function ListRow({
   q,
@@ -304,10 +403,10 @@ function Tab({
   return (
     <button
       onClick={onClick}
-      className={`whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
+      className={`whitespace-nowrap px-4 h-14 font-medium transition-all ease-in-out duration-300 cursor-pointer border-b-2 ${
         active
-          ? "bg-slate-900 text-white"
-          : "bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50"
+          ? "text-blue-700 border-blue-700"
+          : "text-slate-700 hover:bg-slate-50 border-transparent"
       }`}
     >
       {children}
@@ -327,14 +426,15 @@ function Select({
   options: string[];
 }) {
   return (
-    <label className="block">
-      <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">
+    <label className="block">            
+      <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-400">
         {label}
       </span>
+      <div className="relative w-full bg-white flex items-center  border border-slate-100">
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm outline-none focus:border-slate-500"
+        className="appearance-none w-full font-medium h-11 pl-4 pr-8 text-sm text-slate-700 outline-none focus:border-slate-400 cursor-pointer"
       >
         <option value="">All</option>
         {options.map((o) => (
@@ -343,6 +443,8 @@ function Select({
           </option>
         ))}
       </select>
+      <ArrowDown01Icon size={16} strokeWidth={2} className="pointer-events-none absolute right-2 text-slate-500"/>
+          </div>
     </label>
   );
 }
@@ -367,7 +469,7 @@ function ProgramSelect({
 
   return (
     <div className="relative block">
-      <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">
+      <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-400">
         {label}
       </span>
       <input
@@ -379,13 +481,13 @@ function ProgramSelect({
         }}
         onFocus={() => setOpen(true)}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
-        placeholder="Search program…"
-        className="w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm outline-none focus:border-slate-500"
+        placeholder="Search program"
+        className="w-full border border-slate-100 bg-white px-4 h-11 font-medium text-slate-700 text-sm outline-none focus:border-slate-100"
       />
       {open && (
-        <ul className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-lg border border-slate-200 bg-white shadow-lg">
+        <ul className="absolute z-20 mt-1 max-h-56 w-full overflow-auto border border-slate-100 bg-white shadow-lg">
           {filtered.length === 0 ? (
-            <li className="px-3 py-2 text-sm text-slate-400">No matches</li>
+            <li className="px-4 py-2 text-sm text-slate-400">No matches</li>
           ) : (
             filtered.map((o) => (
               <li key={o}>
@@ -397,8 +499,8 @@ function ProgramSelect({
                     onChange(o);
                     setOpen(false);
                   }}
-                  className={`w-full px-3 py-2 text-left text-sm hover:bg-slate-50 ${
-                    o === value ? "bg-slate-100 font-medium" : ""
+                  className={`w-full px-4 h-11 flex items-center cursor-pointer justify-start text-left text-sm transition-all ease-in-out duration-300 hover:bg-slate-50 ${
+                    o === value ? "bg-slate-50 font-medium" : ""
                   }`}
                 >
                   {o}

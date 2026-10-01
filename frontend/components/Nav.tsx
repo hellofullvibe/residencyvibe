@@ -198,7 +198,7 @@ href="/saved"
                 href="https://buymeacoffee.com/residencyvibe"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="cursor-pointer flex items-center justify-center w-full h-14 text-center text-sm font-semibold text-blue-700 bg-blue-700/5 border border-blue-700"
+                className="cursor-pointer flex items-center justify-center w-full h-14 text-center text-sm font-medium text-blue-700 bg-blue-700/10"
               >
                 Support Us
               </Link>
