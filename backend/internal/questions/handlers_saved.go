@@ -44,14 +44,23 @@ func (h *Handler) RecordEncounter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Add the program to the question's aggregate list (once).
+	// Add the program to the question's aggregate list (once), and stamp the current year.
 	if in.Encountered && in.ProgramName != "" {
 		if _, err := h.pool.Exec(r.Context(), `
 			update questions
 			set programs = case when $2 = any(programs) then programs else programs || $2::text end,
+			    year = extract(year from now())::int,
 			    updated_at = now()
 			where id = $1`, questionID, in.ProgramName); err != nil {
 			respond.Error(w, http.StatusInternalServerError, "could not update program list")
+			return
+		}
+	} else if in.Encountered {
+		// Encountered but no program name — still stamp the year.
+		if _, err := h.pool.Exec(r.Context(), `
+			update questions set year = extract(year from now())::int, updated_at = now()
+			where id = $1`, questionID); err != nil {
+			respond.Error(w, http.StatusInternalServerError, "could not update year")
 			return
 		}
 	}

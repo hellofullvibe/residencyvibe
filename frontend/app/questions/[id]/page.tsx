@@ -154,7 +154,7 @@ export default function QuestionDetailPage() {
           {q.year && <span>Year: {q.year}</span>}
           {/* {q.encounter_count > 0 && <span>{q.encounter_count} encountered</span>} */}
         </div>
-        <div className="mt-2 flex flex-wrap gap-y-2 gap-x-4 gap-y-2 text-sm text-slate-400">
+        <div className="mt-1 flex flex-wrap gap-y-2 gap-x-4 gap-y-2 text-sm text-slate-400">
           {q.program && <span>List of Programs: {q.program}</span>}
         </div>
 
@@ -217,27 +217,25 @@ export default function QuestionDetailPage() {
       )}
 
       {/* Recent encounters card */}
-      <div className="mt-6 rounded-xl border border-slate-200 bg-white p-4">
+      <div className="mt-1 border border-slate-100 bg-white px-6 py-8">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-slate-900">
+          <h2 className="text-base font-semibold text-slate-900">
             Recent encounters
           </h2>
-          {q.year && (
             <span className="text-sm font-medium text-slate-500">
-              Year {q.year}
+              Year {new Date().getFullYear()}
             </span>
-          )}
         </div>
         {encounters.length === 0 ? (
           <p className="mt-2 text-sm text-slate-500">
             No encounters reported yet. Mark it below if you got this question.
           </p>
         ) : (
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className="mt-4 flex flex-wrap gap-2">
             {encounters.map((e) => (
               <span
                 key={e.program_name}
-                className="rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-700"
+                className="rounded-full bg-slate-50 px-4 h-11 flex items-center justify-center font-medium text-sm text-slate-700"
               >
                 {e.program_name}
                 <span className="ml-1 text-slate-400">({e.count})</span>
@@ -245,15 +243,16 @@ export default function QuestionDetailPage() {
             ))}
           </div>
         )}
+
+        {user && <EncounterForm questionId={id} data={data} onUpdated={load} />}
       </div>
 
-      {/* Encounter recording */}
-      {user && <EncounterForm questionId={id} data={data} onUpdated={load} />}
+      
 
       {/* Comments */}
-      <section className="mt-8">
-        <h2 className="mb-4 text-lg font-semibold text-slate-900">
-          Comments ({comments.length})
+      <section className="mt-4">
+        <h2 className="mb-2 text-lg font-semibold text-black">
+          Responses ({comments.length})
         </h2>
         {user ? (
           <CommentForm
@@ -300,21 +299,21 @@ function EncounterForm({
   onUpdated: () => Promise<void>;
 }) {
   const q = data.question;
-  const [encountered, setEncountered] = useState(
-    q.my_encounter?.encountered ?? false,
-  );
   const [program, setProgram] = useState(q.my_encounter?.program_name ?? "");
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setProgram(q.my_encounter?.program_name ?? "");
+  }, [q.my_encounter?.program_name]);
 
   async function save() {
     setSaving(true);
     try {
       await api.post(`/api/questions/${questionId}/encounter`, {
-        encountered,
+        encountered: true,
         program_name: program,
       });
       await onUpdated();
-      setProgram("");
     } finally {
       setSaving(false);
     }
@@ -326,16 +325,6 @@ function EncounterForm({
         I encountered this question
       </span>
       <div className="mt-2 flex flex-wrap items-center gap-3">
-        <button
-          onClick={() => setEncountered((v) => !v)}
-          className={`h-14 w-14 flex items-center justify-center gap-2 text-sm font-medium ${
-            encountered
-              ? "bg-blue-600 text-white"
-              : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-          }`}
-        >
-          <TickDouble01Icon size={20} strokeWidth={2} className="shrink-0"/>
-        </button>
         <input
           value={program}
           onChange={(e) => setProgram(e.target.value)}
@@ -345,7 +334,7 @@ function EncounterForm({
         <button
           onClick={save}
           disabled={saving}
-          className="bg-blue-700/10 cursor-pointer h-14 px-4 text-sm font-semibold text-blue-700 hover:text-white transition-all ease-in-out duration-300 hover:bg-blue-700 disabled:pointer-events-none disabled:opacity-60"
+          className="w-full sm:w-auto bg-blue-700/10 cursor-pointer h-14 px-4 text-sm font-semibold text-blue-700 hover:text-white transition-all ease-in-out duration-300 hover:bg-blue-700 disabled:pointer-events-none disabled:opacity-60"
         >
           {saving ? "Saving…" : "Save"}
         </button>
@@ -375,72 +364,77 @@ function CommentThread({
   }
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4">
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-slate-900">
+    <div className="border border-slate-100 bg-white px-6 py-8">
+      <div className="flex items-center gap-2">
+        <span className="text-sm font-semibold text-black">
           @{comment.author_username}
         </span>
+        <span className="text-xs text-slate-400">•</span>
         <span className="text-xs text-slate-400">
           {new Date(comment.created_at).toLocaleDateString()}
         </span>
       </div>
+      <div className="w-full pl-4 border-l-2 border-slate-100">
+
       <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
         {comment.content}
       </p>
+      </div>
 
-      {user && (
+      {user && !replying && (
         <button
           onClick={() => setReplying((v) => !v)}
-          className="mt-2 text-xs font-medium text-slate-500 hover:text-slate-900"
+          className="mt-2 pl-4 underline text-sm font-semibold text-black hover:text-blue-700 cursor-pointer transition-all ease-in-out duration-300"
         >
-          Reply
+          Write a Reply
         </button>
       )}
 
       {replying && (
-        <div className="mt-2">
+        <div className="mt-2 pl-4 py-4">
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
             rows={3}
             maxLength={3000}
             placeholder="Your reply…"
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+            className="w-full border border-slate-100 px-4 py-4 text-sm outline-none focus:border-slate-700"
           />
           <div className="mt-1 flex items-center justify-between">
-            <span className="text-xs text-slate-400">
-              {content.length}/3000
-            </span>
-            <div className="flex gap-2">
+        {/* <span className={`text-xs ${content.length > 2999 ? 'text-rose-600' : 'text-slate-400'}`}>{content.length > 2999 ? "Shorten your response please":content.length}</span> */}
+        <div className="flex gap-2">
+          <button
+          onClick={submitReply}
+          disabled={!content.trim()}
+          className="bg-blue-700 px-4 h-11 text-sm font-semibold text-white  transition-all ease-in-out duration-300 hover:bg-blue-800 cursor-pointer  disabled:pointer-events-none disabled:opacity-50"
+        >
+          Reply
+        </button>
+
               <button
                 onClick={() => {
                   setReplying(false);
                   setContent("");
                 }}
-                className="rounded-md px-3 py-1 text-sm text-slate-500 hover:bg-slate-50"
+                className="px-4 h-11 text-sm font-semibold text-slate-700 transition-all ease-in-out duration-300 cursor-pointer  hover:bg-slate-50"
               >
                 Cancel
               </button>
-              <button
-                onClick={submitReply}
-                disabled={!content.trim()}
-                className="rounded-md bg-slate-900 px-3 py-1 text-sm text-white hover:bg-slate-800 disabled:opacity-50"
-              >
-                Post reply
-              </button>
             </div>
-          </div>
+      </div>
+
         </div>
       )}
 
       {comment.replies.length > 0 && (
-        <div className="mt-3 space-y-3 border-l-2 border-slate-100 pl-3">
+        <div className="mt-4 space-y-4 border-l-2 border-slate-100 ml-4 pl-4">
           {comment.replies.map((r) => (
             <div key={r.id}>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
                 <span className="text-sm font-medium text-slate-800">
                   @{r.author_username}
                 </span>
+                <span className="text-xs text-slate-400">•</span>
                 <span className="text-xs text-slate-400">
                   {new Date(r.created_at).toLocaleDateString()}
                 </span>
@@ -478,8 +472,8 @@ function CommentForm({
   }
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4">
-      <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
+    <div className="border border-slate-200 bg-white px-6 py-8">
+      <span className="text-xs font-medium uppercase tracking-wide text-slate-500 sr-only">
         {label}
       </span>
       <textarea
@@ -488,17 +482,18 @@ function CommentForm({
         rows={4}
         maxLength={3000}
         placeholder="Share how you would approach this question…"
-        className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+        className="w-full border border-slate-100 px-4 py-4 text-sm outline-none focus:border-slate-700"
       />
       <div className="mt-1 flex items-center justify-between">
-        <span className="text-xs text-slate-400">{content.length}/3000</span>
         <button
           onClick={submit}
           disabled={sending || !content.trim()}
-          className="rounded-lg bg-slate-900 px-4 py-1.5 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
+          className="bg-blue-700 px-4 h-11 text-sm font-semibold text-white  transition-all ease-in-out duration-300 hover:bg-blue-800 cursor-pointer  disabled:pointer-events-none disabled:opacity-50"
         >
           {sending ? "Posting…" : "Post comment"}
         </button>
+        <span className={`text-xs ${content.length > 2999 ? 'text-rose-600' : 'text-slate-400'}`}>{content.length > 2999 ? "Shorten your response please":content.length}</span>
+        
       </div>
     </div>
   );
