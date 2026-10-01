@@ -109,11 +109,19 @@ export default function FindPartnerPage() {
     setRefreshing(true);
     setError("");
     try {
-      if (tab === "mine" && user) {
-        await loadMine();
+      if (user) {
+        const [wData, mData] = await Promise.all([
+          api.get<PartnerRequest[]>("/api/partners"),
+          api.get<PartnerRequest[]>("/api/partners/mine"),
+        ]);
+        setWall(wData);
+        setMine(mData);
       } else {
-        await loadWall();
+        const wData = await api.get<PartnerRequest[]>("/api/partners");
+        setWall(wData);
       }
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Could not refresh");
     } finally {
       setRefreshing(false);
     }
