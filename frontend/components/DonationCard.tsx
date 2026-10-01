@@ -23,7 +23,7 @@ export default function DonationCard({
 }) {
   return (
     <div
-      className={`flex ${verticle ? "flex-col" : "flex-row"} gap-12 bg-blue-700 p-8 sm:items-center ${className}`}
+      className={`flex ${verticle ? "flex-col" : "flex-col sm:flex-row"} gap-12 bg-blue-700 p-8 sm:items-center ${className}`}
     >
       <div className="flex-1 flex flex-col gap-8 w-full">
         <div className="flex flex-col gap-1 w-full">

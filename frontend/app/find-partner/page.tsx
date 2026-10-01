@@ -233,8 +233,8 @@ export default function FindPartnerPage() {
 
       <div className="w-full mx-auto max-w-3xl gap-4 pt-8 px-4 pb-16">
         {error && (
-        <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
-      )}
+          <p className="mb-4 text-center bg-red-50 px-4 inline-block py-4 text-sm text-red-700">We are facing some issue loading questions.</p>
+        )}
 
       {loading ? (
         <p className="py-10 text-center text-slate-500">Loading…</p>
@@ -255,7 +255,6 @@ export default function FindPartnerPage() {
                 />
                 {[2, 19, 49, 74].includes(i) && (
                   <DonationCard
-                    verticle={true}
                     description="ResidencyPrep is free for everyone. If it helped you prepare, consider a small donation to keep it running."
                   />
                 )}
@@ -280,7 +279,6 @@ export default function FindPartnerPage() {
                 />
                 {[2, 19, 49, 74].includes(i) && (
                   <DonationCard
-                    verticle={true}
                     description="ResidencyPrep is free for everyone. If it helped you prepare, consider a small donation to keep it running."
                   />
                 )}
