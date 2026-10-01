@@ -1,11 +1,11 @@
 "use client";
 
-export function StarValue({ value, size = "md" }: { value: number; size?: "sm" | "md" }) {
-  const cls = size === "sm" ? "text-sm" : "text-base";
+export function StarValue({ value, size = "sm" }: { value: number; size?: "xs" | "sm" | "md" }) {
+  const cls = size === "xs" ? "text-xs" : size === "sm" ? "text-sm" : "text-base";
   return (
-    <span className={`inline-flex items-center gap-1 font-medium text-amber-500 ${cls}`}>
+    <span className={`inline-flex items-center gap-1 font-medium text-slate-700 hover:text-amber-600 ${cls}`}>
       <span>{Number(value).toFixed(1)}</span>
-      <span>⭐</span>
+      <span>★</span>
     </span>
   );
 }

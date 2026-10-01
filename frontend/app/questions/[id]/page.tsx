@@ -8,6 +8,7 @@ import type { Comment, QuestionDetail, User } from "@/lib/types";
 import { useAuth } from "@/lib/auth";
 import CategoryBadge from "@/components/CategoryBadge";
 import { StarRating, StarValue } from "@/components/StarRating";
+import { ArrowLeft02Icon, Bookmark02Icon } from "hugeicons-react";
 
 export default function QuestionDetailPage() {
   const params = useParams<{ id: string }>();
@@ -94,23 +95,21 @@ export default function QuestionDetailPage() {
   const { question: q, comments, encounters } = data;
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
+    <div className="mx-auto max-w-3xl py-8 ">
       <Link
         href="/questions"
-        className="mb-4 inline-block text-sm text-slate-500 hover:text-slate-900"
+        className="mb-4 px-6 lg:px-0 flex items-center gap-1 text-sm font-medium text-slate-700 hover:text-black transition-all ease-in-out duration-300"
       >
-        ← Back to questions
+        <ArrowLeft02Icon size={16} strokeWidth={2} />
+        <span className="hover:underline">
+
+        Back to Question Bank
+        </span>
       </Link>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-6">
+      <div className="sm:border sm:border-slate-100 bg-white px-6 py-8 ">
         <div className="mb-3 flex items-center justify-between gap-2">
           <CategoryBadge category={q.category} />
-          <button
-            onClick={toggleSave}
-            className="text-sm text-slate-500 hover:text-amber-500"
-          >
-            {q.saved ? "★ Saved" : "☆ Save question"}
-          </button>
         </div>
 
         <h1 className="text-2xl font-bold leading-snug text-slate-900">{q.text}</h1>
@@ -135,6 +134,16 @@ export default function QuestionDetailPage() {
         </div>
 
         {/* Rating */}
+        <button
+            onClick={toggleSave}
+            title={q.saved ? "Unsave" : "Save"}
+            className={`h-11 text-sm rounded-full px-4 hover:text-blue-700 flex items-center justify-center gap-1 border cursor-pointer font-medium transition-all ease-in-out duration-300  ${q.saved ? "text-blue-700 border-blue-50 bg-blue-700/5" : "text-black border-slate-100 bg-white"}`}
+          >
+            <Bookmark02Icon size={16} strokeWidth={2} className="shrink-0" />
+            {q.saved ? "Saved" : "Save Question"}
+          </button> 
+
+
         <div className="mt-4 flex flex-wrap items-center justify-between gap-4 border-t border-slate-100 pt-4">
           <div>
             <div className="flex items-center gap-2">
@@ -167,6 +176,7 @@ export default function QuestionDetailPage() {
               You encountered{q.my_encounter.program_name ? ` at ${q.my_encounter.program_name}` : ""}
             </span>
           )}
+          
         </div>
       </div>
 
