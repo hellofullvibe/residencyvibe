@@ -5,7 +5,7 @@ import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
 import type { PartnerRequest } from "@/lib/types";
 import { useAuth } from "@/lib/auth";
-import { Add01Icon, CaduceusIcon, Calendar04Icon, Mail02Icon, Refresh01Icon, SmartPhone01Icon, Time03Icon, TimeZoneIcon } from "hugeicons-react";
+import { Add01Icon, ArrowDown01Icon, CaduceusIcon, Calendar04Icon, Cancel01Icon, Mail02Icon, Refresh01Icon, SmartPhone01Icon, Time03Icon, TimeZoneIcon, UserMultipleIcon } from "hugeicons-react";
 
 export default function FindPartnerPage() {
   const { user } = useAuth();
@@ -615,17 +615,33 @@ function CreateModal({
       {/* Profile summary pulled from the account */}
       <div className="bg-slate-50 px-4 py-4 text-sm text-slate-700">
         <p className="font-medium text-black">{user?.full_name} (@{user?.username})</p>
-        <div>
-          
+        <div className="grid grid-cols-2 mt-4">
+          <div className="flex gap-1 items-center h-11">
+            <UserMultipleIcon size={16} strokeWidth={2} />
+            <p>{user?.gender}</p>
+          </div>
+          <div className="flex gap-1 items-center h-11">
+            <TimeZoneIcon size={16} strokeWidth={2} />
+            <p>{user?.timezone}</p>
+          </div>
+          <div className="flex gap-1 items-center h-11">
+            <Mail02Icon size={16} strokeWidth={2} />
+            <p>{user?.email}</p>
+          </div>
+          <div className="flex gap-1 items-center h-11">
+            <SmartPhone01Icon size={16} strokeWidth={2} />
+            <p>{user?.phone}</p>
+          </div>
+          <div className="flex gap-1 items-center h-11">
+            <CaduceusIcon size={16} strokeWidth={2} />
+            <p>{user?.specialty}</p>
+          </div>
         </div>
-        <p>{user?.gender} · {user?.timezone}</p>
-        <p>{user?.email} · {user?.phone}</p>
-        {user?.specialty && <p>Specialty: {user?.specialty}</p>}
       </div>
 
       <form onSubmit={submit} className="mt-4 space-y-3">
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Date">
+          <Field label="Date" arrowIcon = {false}>
             <input
               type="date"
               required
@@ -634,7 +650,7 @@ function CreateModal({
               className={inputCls}
             />
           </Field>
-          <Field label="Time">
+          <Field label="Time" arrowIcon = {false}>
             <input
               type="time"
               required
@@ -643,7 +659,7 @@ function CreateModal({
               className={inputCls}
             />
           </Field>
-          <Field label="Timezone">
+          <Field label="Timezone" arrowIcon = {false}>
             <input
               required
               value={form.timezone}
@@ -652,6 +668,7 @@ function CreateModal({
             />
           </Field>
           <Field label="Number of participants">
+            
             <select
               value={form.max_participants}
               onChange={(e) => set("max_participants", e.target.value)}
@@ -665,7 +682,7 @@ function CreateModal({
             </select>
           </Field>
         </div>
-        <Field label="Notes (optional)">
+        <Field label="Notes (optional)" arrowIcon = {false}>
           <textarea
             rows={3}
             value={form.notes}
@@ -676,21 +693,21 @@ function CreateModal({
         </Field>
 
         {error && (
-          <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+          <p className="mb-4 text-center bg-red-50 px-4 inline-block py-4 text-sm text-red-700">We are facing some issue loading questions.</p>
         )}
 
-        <div className="flex gap-2 pt-1">
+        <div className="flex gap-2 py-4">
           <button
             type="submit"
             disabled={submitting}
-            className="flex-1 rounded-lg bg-slate-900 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-60"
+            className="bg-blue-700 w-full cursor-pointer sm:px-8 h-14 flex items-center justify-center font-semibold text-white hover:bg-blue-800 transition-all ease-in-out duration-300 disabled:opacity-60"
           >
             {submitting ? "Creating…" : "Submit request"}
           </button>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50"
+            className="bg-white w-full cursor-pointer sm:px-8 h-14 flex items-center justify-center font-semibold text-blue-700 hover:bg-gray-100 transition-all ease-in-out duration-300"
           >
             Cancel
           </button>
@@ -711,15 +728,15 @@ function ModalShell({
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
-      <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+      <div className="w-full max-w-lg rounded-2xl bg-white px-6 py-8 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-bold text-slate-900">{title}</h2>
           <button
             onClick={onClose}
-            className="rounded-md px-2 py-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+            className="cursor-pointer h-11 w-11 flex items-center justify-center text-slate-400 transition-all ease-in-out duration-300 hover:bg-slate-100 hover:text-blue-700"
             aria-label="Close"
           >
-            ✕
+            <Cancel01Icon size={20} strokeWidth={2} />
           </button>
         </div>
         {children}
@@ -751,13 +768,20 @@ function Tab({
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children, arrowIcon = true }: { label: string; children: React.ReactNode, arrowIcon?: boolean }) {
   return (
     <label className="block">
       <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">
         {label}
       </span>
-      {children}
+      <div className="relative w-full bg-white flex items-center  border border-slate-100">
+        {children}
+      {arrowIcon && <ArrowDown01Icon
+          size={16}
+          strokeWidth={2}
+          className="pointer-events-none absolute right-2 text-slate-400"
+        />}
+        </div>
     </label>
   );
 }
