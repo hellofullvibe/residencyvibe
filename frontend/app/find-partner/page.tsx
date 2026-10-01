@@ -61,6 +61,18 @@ export default function FindPartnerPage() {
     };
   }, [user]);
 
+  // Poll for new interest so the "My requests (N)" badge updates automatically.
+  useEffect(() => {
+    if (!user) return;
+    const id = setInterval(() => {
+      api
+        .get<PartnerRequest[]>("/api/partners/mine")
+        .then((data) => setMine(data))
+        .catch(() => {});
+    }, 15000);
+    return () => clearInterval(id);
+  }, [user]);
+
   async function expressInterest(r: PartnerRequest) {
     if (!user) return;
     try {
@@ -596,13 +608,16 @@ function CreateModal({
   }
 
   const inputCls =
-    "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-slate-500";
+  "appearance-none w-full border border-slate-100 bg-white px-4 py-4 text-sm outline-none focus:border-slate-500";
 
   return (
     <ModalShell title="Create a partner request" onClose={onClose}>
       {/* Profile summary pulled from the account */}
-      <div className="rounded-lg bg-slate-50 px-4 py-3 text-sm text-slate-700">
-        <p className="font-medium text-slate-900">{user?.full_name} (@{user?.username})</p>
+      <div className="bg-slate-50 px-4 py-4 text-sm text-slate-700">
+        <p className="font-medium text-black">{user?.full_name} (@{user?.username})</p>
+        <div>
+          
+        </div>
         <p>{user?.gender} · {user?.timezone}</p>
         <p>{user?.email} · {user?.phone}</p>
         {user?.specialty && <p>Specialty: {user?.specialty}</p>}
