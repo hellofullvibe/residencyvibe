@@ -327,7 +327,7 @@ export default function QuestionsPage() {
           
 
           {!user && (
-             <div className="mb-6 bg-blue-50 px-4 h-11 text-center flex items-center justify-center gap-1 text-sm text-slate-700">
+             <div className="mb-6 bg-blue-50 px-4 text-center inline-block py-4 gap-1 text-sm text-slate-700">
               <Link href="/signup" className="font-semibold underline text-blue-700">
                 Join now 
               </Link>
@@ -337,7 +337,7 @@ export default function QuestionsPage() {
           )}
 
           {error && (
-            <p className="mb-4 text-center bg-red-50 px-4 h-11 flex items-center justify-center text-sm text-red-700">
+            <p className="mb-4 text-center bg-red-50 px-4 inline-block py-4 text-sm text-red-700">
               We are facing some issue loading questions.
             </p>
           )}
@@ -349,7 +349,7 @@ export default function QuestionsPage() {
               Loading questions…
             </p>
           ) : questions.length === 0 ? (
-            <p className="mb-4 text-center bg-slate-100 px-4 h-11 flex items-center justify-center gap-1 text-sm text-slate-700">
+            <p className="mb-4 text-center bg-slate-100 px-4 inline-block py-4 gap-1 text-sm text-slate-700">
               There are no questions matching your filters. Try adjusting the filers or <button className="font-semibold cursor-pointer underline text-blue-700" onClick={() => setShowAdd(true)}>add a question</button>
             </p>
           ) : view === "grid" ? (

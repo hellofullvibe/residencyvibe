@@ -5,6 +5,7 @@ import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
 import type { PartnerRequest } from "@/lib/types";
 import { useAuth } from "@/lib/auth";
+import { Add01Icon } from "hugeicons-react";
 
 export default function FindPartnerPage() {
   const { user } = useAuth();
@@ -133,7 +134,38 @@ export default function FindPartnerPage() {
     !!user?.gender && !!user?.timezone && !!user?.phone;
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8">
+    <div className="w-full min-h-screen">
+      <div className="w-full bg-white">
+        <div className="max-w-6xl mx-auto flex flex-col items-center justify-center gap-8 pt-25">
+          <div className="flex flex-col gap-8 items-center justify-center px-6 lg:px-0">
+            <div className="flex flex-col items-center justify-center gap-2">
+              <h5 className="max-w-sm text-center font-semibold text-blue-700 text-xs uppercase tracking-wide">
+                Questions That Asked In Interviews
+              </h5>
+              <h1 className="mx-auto max-w-2xl text-4xl font-bold tracking-tight text-black sm:text-5xl">
+                Find Partner
+              </h1>
+            </div>
+            <p className="max-w-xl text-center text-slate-600">
+              Browse questions by category, search for specific questions, and
+              learn from experiences shared by other applicants. Save questions
+              you want to practice and build your own interview preparation
+              list.
+            </p>
+          </div>
+
+          <div className="w-full px-6 flex items-center justify-center lg:px-0">
+            <button
+              onClick={() => setShowCreate(true)}
+              className="cursor-pointer bg-blue-700/10 w-full sm:w-auto sm:px-8 h-14 flex items-center justify-center font-semibold text-blue-700 hover:bg-blue-800 hover:text-white transition-all ease-in-out duration-300 gap-2"
+            >
+              <Add01Icon size={20} strokeWidth={2} />
+              <span>Create request</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Find Partner</h1>

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { api, ApiError } from "@/lib/api";
 import type { Meta, Question } from "@/lib/types";
 import { useAuth } from "@/lib/auth";
+import { ArrowDown01Icon, Cancel01Icon } from "hugeicons-react";
 
 export default function AddQuestionModal({
   meta,
@@ -78,31 +79,31 @@ export default function AddQuestionModal({
   }
 
   const inputCls =
-    "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-slate-500";
+    "appearance-none w-full border border-slate-100 bg-white px-4 py-4 text-sm outline-none focus:border-slate-500";
 
   return (
     <ModalShell title="Add a question" onClose={onClose}>
-      <form onSubmit={onSubmit} className="space-y-3">
-        <Field label="Question *">
+      <form onSubmit={onSubmit} className="flex flex-col gap-4 overflow-x-auto max-h-[640px]">
+        <Field label="What was the Question?" arrowIcon = {false}>
           <textarea
             required
             rows={3}
             value={form.text}
             onChange={(e) => set("text", e.target.value)}
-            placeholder="Tell me about yourself?"
+            placeholder="Write the question here"
             className={inputCls}
           />
         </Field>
-        <Field label="Variants (one per line)">
+        <Field label="Question Variants (one per line)" arrowIcon = {false}>
           <textarea
             rows={3}
             value={form.variants}
             onChange={(e) => set("variants", e.target.value)}
-            placeholder={"Tell me about your hometown\nTell me about your family"}
+            placeholder={"Write the variant of the question here"}
             className={inputCls}
           />
         </Field>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-2">
           <Field label="Category">
             <select
               value={form.category}
@@ -122,7 +123,7 @@ export default function AddQuestionModal({
               onChange={(e) => set("specialty", e.target.value)}
               className={inputCls}
             >
-              <option value="">—</option>
+              <option value="">Select Specialty</option>
               {(meta?.specialties || []).map((s) => (
                 <option key={s} value={s}>
                   {s}
@@ -130,11 +131,11 @@ export default function AddQuestionModal({
               ))}
             </select>
           </Field>
-          <Field label="Program">
+          <Field label="Program" arrowIcon = {false}>
             <input
               value={form.program}
               onChange={(e) => set("program", e.target.value)}
-              placeholder="e.g. SUNY Downstate"
+              placeholder="Write full program name"
               className={inputCls}
             />
           </Field>
@@ -144,7 +145,7 @@ export default function AddQuestionModal({
               onChange={(e) => set("institutional_setting", e.target.value)}
               className={inputCls}
             >
-              <option value="">—</option>
+              <option value="">Select Setting</option>
               {(meta?.institutional_settings || []).map((s) => (
                 <option key={s} value={s}>
                   {s}
@@ -158,7 +159,7 @@ export default function AddQuestionModal({
               onChange={(e) => set("frequency", e.target.value)}
               className={inputCls}
             >
-              <option value="">—</option>
+              <option value="">Select Frequency</option>
               {(meta?.frequencies || []).map((f) => (
                 <option key={f} value={f}>
                   {f}
@@ -166,7 +167,7 @@ export default function AddQuestionModal({
               ))}
             </select>
           </Field>
-          <Field label="Year">
+          <Field label="Year" arrowIcon = {false}>
             <input
               type="number"
               value={form.year}
@@ -177,21 +178,21 @@ export default function AddQuestionModal({
         </div>
 
         {error && (
-          <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+          <p className="mb-4 text-center bg-red-50 px-4 inline-block py-4 text-sm text-red-700">We are facing some issue loading questions.</p>
         )}
 
-        <div className="flex gap-2 pt-1">
+        <div className="flex gap-2 py-4">
           <button
             type="submit"
             disabled={submitting}
-            className="flex-1 rounded-lg bg-slate-900 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-60"
+            className="bg-blue-700 w-full cursor-pointer sm:px-8 h-14 flex items-center justify-center font-semibold text-white hover:bg-blue-800 transition-all ease-in-out duration-300 disabled:opacity-60"
           >
             {submitting ? "Adding…" : "Add question"}
           </button>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50"
+            className="bg-white w-full cursor-pointer sm:px-8 h-14 flex items-center justify-center font-semibold text-blue-700 hover:bg-gray-100 transition-all ease-in-out duration-300"
           >
             Cancel
           </button>
@@ -212,15 +213,15 @@ function ModalShell({
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
-      <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+      <div className="w-full max-w-lg rounded-2xl bg-white px-6 py-8 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-bold text-slate-900">{title}</h2>
           <button
             onClick={onClose}
-            className="rounded-md px-2 py-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+            className="cursor-pointer h-11 w-11 flex items-center justify-center text-slate-400 transition-all ease-in-out duration-300 hover:bg-slate-100 hover:text-blue-700"
             aria-label="Close"
           >
-            ✕
+            <Cancel01Icon size={20} strokeWidth={2} />
           </button>
         </div>
         {children}
@@ -229,13 +230,21 @@ function ModalShell({
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children, arrowIcon= true }: { label: string; children: React.ReactNode, arrowIcon?: boolean }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">
+      <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-400">
         {label}
       </span>
-      {children}
+      <div className="relative w-full bg-white flex items-center  border border-slate-100">
+        {children}
+      {arrowIcon && <ArrowDown01Icon
+          size={16}
+          strokeWidth={2}
+          className="pointer-events-none absolute right-2 text-slate-400"
+        />}
+        </div>
+    
     </label>
   );
 }

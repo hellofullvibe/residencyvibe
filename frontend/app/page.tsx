@@ -16,13 +16,13 @@ export default function Home() {
         <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-2">
           <Link
             href="/questions"
-            className="bg-blue-700 w-full sm:w-auto sm:px-8 h-14 flex items-center justify-center font-semibold text-white hover:bg-blue-800 transition-all ease-in-out duration-300"
+            className="cursor-pointer bg-blue-700 w-full sm:w-auto sm:px-8 h-14 flex items-center justify-center font-semibold text-white hover:bg-blue-800 transition-all ease-in-out duration-300"
           >
             Browse Questions
           </Link>
           <Link
             href="/signup"
-            className="bg-white w-full sm:w-auto sm:px-8 h-14 flex items-center justify-center font-semibold text-blue-700 hover:bg-gray-100 transition-all ease-in-out duration-300"
+            className="cursor-pointer bg-white w-full sm:w-auto sm:px-8 h-14 flex items-center justify-center font-semibold text-blue-700 hover:bg-gray-100 transition-all ease-in-out duration-300"
           >
             Join Community
           </Link>
