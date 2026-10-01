@@ -5,7 +5,7 @@ import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
 import type { PartnerRequest } from "@/lib/types";
 import { useAuth } from "@/lib/auth";
-import { Add01Icon, CaduceusIcon, Calendar04Icon, Refresh01Icon, Time03Icon, TimeZoneIcon } from "hugeicons-react";
+import { Add01Icon, CaduceusIcon, Calendar04Icon, Mail02Icon, Refresh01Icon, SmartPhone01Icon, Time03Icon, TimeZoneIcon } from "hugeicons-react";
 
 export default function FindPartnerPage() {
   const { user } = useAuth();
@@ -361,7 +361,6 @@ function WallCard({
           <span className="h-11 text-sm rounded-full px-4 flex items-center justify-center gap-1 border cursor-pointer font-medium transition-all ease-in-out duration-300 bg-white text-amber-600 border-slate-100">Complete profile to join</span>
         ) : null}
 
-
         {contactVisible && r.creator_email && (
           <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
             <span>{r.creator_name}</span>
@@ -447,41 +446,51 @@ function MyRequestCard({
         </span>
 
         {!r.interests || r.interests.length === 0 ? (
-          <p className="mt-1 text-sm text-slate-400 text-center py-4 w-full bg-slate-50">No one interested yet.</p>
+          <p className="mt-2 text-sm text-slate-400 text-center py-4 w-full bg-slate-50 px-4">No one interested yet.</p>
         ) : (
-          <div className="mt-2 space-y-2">
+          <div className="mt-2 flex flex-col gap-2">
             {r.interests.map((i) => (
               <div
                 key={i.id}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2"
+                className="flex flex-wrap items-center justify-between gap-2 bg-slate-50 px-4 py-4 gap-8 lg:gap-2"
               >
-                <div className="text-sm">
-                  <div className="flex flex-wrap items-center gap-1">
-                    <span className="font-medium text-slate-900">
-                      {i.status === "approved" && i.full_name ? i.full_name : `@${i.username}`}
+                <div className="text-sm w-full">
+                  <div className="flex flex-wrap items-center gap-1 w-full">
+                    <span className="font-medium text-black">
+                      {i.status === "approved" && i.full_name ? i.full_name : ``}
                     </span>
-                    <span className="text-slate-500">@{i.username}</span>
-                    {i.gender && <span className="text-slate-500">· {i.gender}</span>}
-                    {i.specialty && <span className="text-slate-500">· {i.specialty}</span>}
-                    {i.timezone && <span className="text-slate-500">· {i.timezone}</span>}
+                    <span className="text-slate-700">@{i.username}</span>
+                    {i.gender && <span className="text-slate-700">· {i.gender}</span>}
+                    {i.specialty && <span className="text-slate-700">· {i.specialty}</span>}
+                    {i.timezone && <span className="text-slate-700">· {i.timezone}</span>}
                   </div>
                   {i.status === "approved" && (
-                    <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                      {i.email && <span>{i.email}</span>}
-                      {i.phone && <span>{i.phone}</span>}
+                    <div className="mt-4 flex flex-wrap items-center gap-2 text-sm text-slate-700">
+                      {i.email &&
+                      <div className="flex items-center justify-center sm:justify-start gap-2 h-11 bg-gray-100 px-4 flex-1 whitespace-nowrap">
+                        <Mail02Icon size={16} strokeWidth={2}/>
+                        <span>{i.email}</span>
+                      </div>
+                      }
+                      {i.phone &&
+                      <div className="flex items-center justify-center sm:justify-start gap-2 h-11 bg-gray-100 px-4 flex-1 whitespace-nowrap">
+                        <SmartPhone01Icon size={16} strokeWidth={2}/>
+                        <span>{i.phone}</span>
+                      </div>}
+
                     </div>
                   )}
                 </div>
-                <div className="flex flex-wrap items-center gap-2">
+
+                <div className="flex flex-wrap items-center gap-8 lg:gap-2 w-full mt-4">
                   {i.status === "approved" ? (
-                    <>
-                      <span className="rounded-full bg-emerald-100 px-3 py-0.5 text-xs font-medium text-emerald-800">
-                        Approved
-                      </span>
+                    <div className="w-full flex items-center justify-between gap-4 lg:gap-2 flex-wrap w-full">
+
+                      <div className="flex items-center  justify-between gap-2 w-full lg:w-auto">
                       {i.email && (
                         <a
                           href={`mailto:${i.email}?subject=${encodeURIComponent("Find Partner: mock interview session")}`}
-                          className="rounded-md border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                          className="h-11 text-sm rounded-full px-4 text-blue-700 flex items-center justify-center gap-1 border cursor-pointer font-medium transition-all ease-in-out duration-300 bg-white border-slate-100 w-full lg:w-auto"
                         >
                           Email
                         </a>
@@ -491,24 +500,27 @@ function MyRequestCard({
                           href={`https://wa.me/${i.phone.replace(/\D/g, "")}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="rounded-md border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-100"
+                          className="h-11 text-sm rounded-full px-4 text-emerald-700 flex items-center justify-center gap-1 border cursor-pointer font-medium transition-all ease-in-out duration-300 bg-white border-slate-100 w-full lg:w-auto"
                         >
                           WhatsApp
                         </a>
                       )}
+                      </div>
+
                       <button
                         onClick={() => onUnapprove(i.user_id)}
-                        className="rounded-md border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-100"
+                        className="bg-amber-600/5 px-4 h-11 text-sm font-medium hover:bg-amber-600 text-amber-600 hover:text-white cursor-pointer disabled:cursor-not-allowed transition-all ease-in-out duration-300 w-full lg:w-auto"
                         title="Free up a slot"
                       >
                         Unapprove
                       </button>
-                    </>
+
+                    </div>
                   ) : (
                     <button
                       onClick={() => onApprove(i.user_id)}
                       disabled={slotsLeft <= 0}
-                      className="rounded-md bg-slate-900 px-3 py-1 text-xs font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
+                      className="bg-blue-700 px-4 h-11 text-sm font-medium hover:bg-blue-800 text-white cursor-pointer disabled:cursor-not-allowed transition-all ease-in-out duration-300 disabled:opacity-40 w-full lg:w-auto"
                     >
                       {slotsLeft > 0 ? "Approve" : "No slots"}
                     </button>

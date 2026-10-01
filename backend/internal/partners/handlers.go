@@ -98,6 +98,9 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 
 	if u := auth.UserFrom(r); u != nil {
 		h.attachState(r, u.ID, items)
+		for i := range items {
+			items[i] = h.withContact(r, u.ID, items[i])
+		}
 	}
 
 	respond.JSON(w, http.StatusOK, items)
@@ -402,6 +405,7 @@ func (h *Handler) Mine(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		items[i].Interests = interests
+		items[i] = h.withContact(r, u.ID, items[i])
 	}
 
 	respond.JSON(w, http.StatusOK, items)
