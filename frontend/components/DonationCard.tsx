@@ -10,6 +10,7 @@ export default function DonationCard({
   imageSrc = "/support.png",
   imageClass = "",
   className = "",
+  verticle = false,
 }: {
   title?: string;
   description?: string;
@@ -18,10 +19,11 @@ export default function DonationCard({
   imageSrc?: string;
   imageClass?: string;
   className?: string;
+  verticle?: boolean;
 }) {
   return (
     <div
-      className={`flex flex-col gap-12 bg-blue-700 p-8 sm:flex-row sm:items-center ${className}`}
+      className={`flex ${verticle ? "flex-col" : "flex-row"} gap-12 bg-blue-700 p-8 sm:items-center ${className}`}
     >
       <div className="flex-1 flex flex-col gap-8 w-full">
         <div className="flex flex-col gap-1 w-full">
@@ -44,7 +46,7 @@ export default function DonationCard({
       <div className="flex items-center justify-center">
         <Image
           src={imageSrc}
-          alt=""
+          alt="Donation Illustration"
           width={320}
           height={200}
           className={`h-auto w-full sm:w-60 object-contain ${imageClass}`}

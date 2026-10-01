@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Fragment } from "react";
 import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
 import type { Meta, Question } from "@/lib/types";
@@ -17,6 +17,7 @@ import {
   ListViewIcon,
 } from "hugeicons-react";
 import CategoryBadge from "@/components/CategoryBadge";
+import DonationCard from "@/components/DonationCard";
 
 type Filters = {
   category: string;
@@ -161,7 +162,7 @@ export default function QuestionsPage() {
       {/* Toolbar */}
 
       <div className="w-full mx-auto max-w-6xl flex gap-4 pt-8">
-        <div className="hidden lg:block max-w-xs w-full gap-4">
+        <div className="hidden lg:block max-w-xs w-full gap-4 space-y-4">
           <div className="bg-white w-full px-6 pt-4 pb-8">
             <div className="flex items-center justify-between h-11">
               <h3 className="text-base font-semibold">Filters</h3>
@@ -209,6 +210,10 @@ export default function QuestionsPage() {
               />
             </div>
           </div>
+          <DonationCard
+          verticle={true}
+            description="ResidencyPrep is free for everyone. If it helped you prepare, consider a small donation to keep it running."
+          />
         </div>
 
         <div className="flex-1 px-6 lg:px-0">
@@ -319,6 +324,7 @@ export default function QuestionsPage() {
               </div>
             </div>
           )}
+          
 
           {!user && (
              <div className="mb-6 bg-blue-50 px-4 h-11 text-center flex items-center justify-center gap-1 text-sm text-slate-700">
@@ -348,23 +354,41 @@ export default function QuestionsPage() {
             </p>
           ) : view === "grid" ? (
             <div className="grid gap-4 sm:grid-cols-2">
-              {questions.map((q) => (
-                <QuestionCard
-                  key={q.id}
-                  question={q}
-                  onToggleSave={user ? toggleSave : undefined}
-                />
+              {questions.map((q, i) => (
+                <Fragment key={q.id}>
+                  <QuestionCard
+                    question={q}
+                    onToggleSave={user ? toggleSave : undefined}
+                  />
+                  {[2, 19, 49, 74].includes(i) && (
+                    <div className="block lg:hidden sm:col-span-2">
+                      <DonationCard
+                        verticle={true}
+                        description="ResidencyPrep is free for everyone. If it helped you prepare, consider a small donation to keep it running."
+                      />
+                    </div>
+                  )}
+                </Fragment>
               ))}
             </div>
           ) : (
             <div className="divide-y divide-slate-100">
-              {questions.map((q) => (
-                <ListRow
-                  key={q.id}
-                  q={q}
-                  user={user}
-                  onToggleSave={toggleSave}
-                />
+              {questions.map((q, i) => (
+                <Fragment key={q.id}>
+                  <ListRow
+                    q={q}
+                    user={user}
+                    onToggleSave={toggleSave}
+                  />
+                  {[2, 19, 49, 74].includes(i) && (
+                    <div className="block lg:hidden py-4">
+                      <DonationCard
+                        verticle={true}
+                        description="ResidencyPrep is free for everyone. If it helped you prepare, consider a small donation to keep it running."
+                      />
+                    </div>
+                  )}
+                </Fragment>
               ))}
             </div>
           )}
