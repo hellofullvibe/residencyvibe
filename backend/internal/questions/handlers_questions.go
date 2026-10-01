@@ -362,20 +362,31 @@ func (h *Handler) Rate(w http.ResponseWriter, r *http.Request) {
 		respond.Error(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	if in.Star < 1 || in.Star > 5 {
-		respond.Error(w, http.StatusBadRequest, "star must be between 1 and 5")
+	if in.Star < 0 || in.Star > 5 {
+		respond.Error(w, http.StatusBadRequest, "star must be between 0 and 5")
 		return
 	}
 
-	_, err = h.pool.Exec(r.Context(), `
-		insert into ratings (question_id, user_id, star)
-		values ($1, $2, $3)
-		on conflict (question_id, user_id)
-		do update set star = excluded.star, updated_at = now()`,
-		id, u.ID, in.Star)
-	if err != nil {
-		respond.Error(w, http.StatusInternalServerError, "could not save rating")
-		return
+	if in.Star == 0 {
+		// Unrate: delete the user's rating row
+		_, err = h.pool.Exec(r.Context(), `
+			delete from ratings where question_id = $1 and user_id = $2`,
+			id, u.ID)
+		if err != nil {
+			respond.Error(w, http.StatusInternalServerError, "could not remove rating")
+			return
+		}
+	} else {
+		_, err = h.pool.Exec(r.Context(), `
+			insert into ratings (question_id, user_id, star)
+			values ($1, $2, $3)
+			on conflict (question_id, user_id)
+			do update set star = excluded.star, updated_at = now()`,
+			id, u.ID, in.Star)
+		if err != nil {
+			respond.Error(w, http.StatusInternalServerError, "could not save rating")
+			return
+		}
 	}
 
 	var avg float64

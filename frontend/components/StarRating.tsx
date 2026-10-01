@@ -19,9 +19,9 @@ export function StarRating({
   value: number;
   onChange?: (v: number) => void;
   readonly?: boolean;
-  size?: "sm" | "md";
+  size?: "xs" | "sm" | "md"
 }) {
-  const cls = size === "sm" ? "text-sm" : "text-lg";
+const cls = size === "xs" ? "text-xs" : size === "sm" ? "text-sm" : "text-base";
   return (
     <div className={`flex items-center gap-0.5 ${cls}`}>
       {[1, 2, 3, 4, 5].map((n) => (
@@ -29,17 +29,17 @@ export function StarRating({
           key={n}
           type="button"
           disabled={readonly}
-          onClick={() => onChange?.(n)}
+          onClick={() => onChange?.(value === n ? 0 : n)}
           className={readonly ? "cursor-default" : "cursor-pointer hover:scale-110"}
           aria-label={`${n} star`}
         >
           <span
             className={
               value >= n - 0.25
-                ? "text-amber-400"
+                ? "text-amber-600"
                 : value >= n - 0.75
                   ? "text-amber-300"
-                  : "text-slate-300"
+                  : "text-slate-200"
             }
           >
             ★
