@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
 import type { PartnerRequest } from "@/lib/types";
 import { useAuth } from "@/lib/auth";
+import DonationCard from "@/components/DonationCard";
 import { Add01Icon, ArrowDown01Icon, CaduceusIcon, Calendar04Icon, Cancel01Icon, Mail02Icon, Refresh01Icon, SmartPhone01Icon, Time03Icon, TimeZoneIcon, UserMultipleIcon } from "hugeicons-react";
 
 export default function FindPartnerPage() {
@@ -244,14 +245,21 @@ export default function FindPartnerPage() {
           </p>
         ) : (
           <div className="space-y-4">
-            {wall.map((r) => (
-              <WallCard
-                key={r.id}
-                r={r}
-                user={user}
-                profileComplete={profileComplete}
-                onInterested={() => expressInterest(r)}
-              />
+            {wall.map((r, i) => (
+              <Fragment key={r.id}>
+                <WallCard
+                  r={r}
+                  user={user}
+                  profileComplete={profileComplete}
+                  onInterested={() => expressInterest(r)}
+                />
+                {[2, 19, 49, 74].includes(i) && (
+                  <DonationCard
+                    verticle={true}
+                    description="ResidencyPrep is free for everyone. If it helped you prepare, consider a small donation to keep it running."
+                  />
+                )}
+              </Fragment>
             ))}
           </div>
         )
@@ -262,14 +270,21 @@ export default function FindPartnerPage() {
               You haven&apos;t created any sessions yet.
             </p>
           ) : (
-            mine.map((r) => (
-              <MyRequestCard
-                key={r.id}
-                r={r}
-                onApprove={(uid) => approve(r, uid)}
-                onUnapprove={(uid) => unapprove(r, uid)}
-                onDelete={() => remove(r)}
-              />
+            mine.map((r, i) => (
+              <Fragment key={r.id}>
+                <MyRequestCard
+                  r={r}
+                  onApprove={(uid) => approve(r, uid)}
+                  onUnapprove={(uid) => unapprove(r, uid)}
+                  onDelete={() => remove(r)}
+                />
+                {[2, 19, 49, 74].includes(i) && (
+                  <DonationCard
+                    verticle={true}
+                    description="ResidencyPrep is free for everyone. If it helped you prepare, consider a small donation to keep it running."
+                  />
+                )}
+              </Fragment>
             ))
           )}
         </div>
