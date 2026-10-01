@@ -16,11 +16,11 @@ export default function QuestionCard({
   return (
     <div
       
-      className="flex justify-between flex-col border border-slate-100 bg-white px-6 py-6 transition-all ease-in-out duration-300 cursor-pointer hover:bg-gray-100 hover:border-slate-200"
+      className="flex justify-between flex-col border border-slate-100 bg-white px-6 py-6 transition-all ease-in-out duration-300 hover:bg-gray-100 hover:border-slate-200"
     >
       <Link
       href={`/questions/${question.id}`} className="flex-1">
-      <div className="mb-2 flex items-center justify-between gap-2 border-b pb-4 border-slate-100">
+      <div className="mb-2 cursor-pointer  flex items-center justify-between gap-2 border-b pb-4 border-slate-100">
         <CategoryBadge category={question.category} />
         <div className="flex items-center gap-2 text-xs text-slate-400">
           <StarValue value={question.star} size={"xs"} />
@@ -62,8 +62,8 @@ export default function QuestionCard({
           className={`h-11 text-sm rounded-full px-4 hover:text-blue-700 flex items-center justify-center gap-1 border cursor-pointer font-medium transition-all ease-in-out duration-300 bg-white text-black border-slate-100`}
         >
           <Chatting01Icon size={16} strokeWidth={2} className="shrink-0" />
-          {question.encounter_count > 0
-            ? `${question.encounter_count} Response`
+          {question.comment_count > 0
+            ? `${question.comment_count} Response`
             : "Add response"}
         </Link>
 
