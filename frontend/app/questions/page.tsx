@@ -26,6 +26,7 @@ type Filters = {
   institutional_setting: string;
   frequency: string;
   min_star: string;
+  min_percent: string;
   sort: string;
 };
 
@@ -36,6 +37,7 @@ const initialFilters: Filters = {
   institutional_setting: "",
   frequency: "",
   min_star: "",
+  min_percent: "",
   sort: "",
 };
 
@@ -196,6 +198,25 @@ export default function QuestionsPage() {
                 onChange={(v) => setFilter("institutional_setting", v)}
                 options={meta?.institutional_settings || []}
               />
+              {filters.institutional_setting && (
+                <label className="block">
+                  <span className="mb-1 flex items-center justify-between text-xs font-medium uppercase tracking-wide text-slate-500">
+                    <span>Min % of setting</span>
+                    <span className="text-blue-700">
+                      {filters.min_percent ? `${filters.min_percent}%` : "0%"}
+                    </span>
+                  </span>
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    step={5}
+                    value={filters.min_percent || "0"}
+                    onChange={(e) => setFilter("min_percent", e.target.value)}
+                    className="w-full accent-blue-700"
+                  />
+                </label>
+              )}
               <Select
                 label="Frequency"
                 value={filters.frequency}
@@ -309,6 +330,25 @@ export default function QuestionsPage() {
                   onChange={(v) => setFilter("institutional_setting", v)}
                   options={meta?.institutional_settings || []}
                 />
+                {filters.institutional_setting && (
+                  <label className="block">
+                    <span className="mb-1 flex items-center justify-between text-xs font-medium uppercase tracking-wide text-slate-500">
+                      <span>Min % of setting</span>
+                      <span className="text-blue-700">
+                        {filters.min_percent ? `${filters.min_percent}%` : "0%"}
+                      </span>
+                    </span>
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      step={5}
+                      value={filters.min_percent || "0"}
+                      onChange={(e) => setFilter("min_percent", e.target.value)}
+                      className="w-full accent-blue-700"
+                    />
+                  </label>
+                )}
                 <Select
                   label="Frequency"
                   value={filters.frequency}

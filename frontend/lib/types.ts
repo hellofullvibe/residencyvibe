@@ -15,6 +15,18 @@ export interface Encounter {
   program_name?: string;
 }
 
+export interface SettingShare {
+  setting: string;
+  percentage: number;
+  count: number;
+}
+
+export interface Program {
+  id: string;
+  name: string;
+  institutional_setting: string;
+}
+
 export interface Question {
   id: string;
   text: string;
@@ -32,6 +44,7 @@ export interface Question {
   updated_at: string;
   comment_count: number;
   encounter_count: number;
+  settings: SettingShare[];
   my_rating?: number;
   my_encounter?: Encounter;
   saved: boolean;

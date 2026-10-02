@@ -13,6 +13,11 @@ export default function QuestionCard({
   question: Question;
   onToggleSave?: (q: Question) => void;
 }) {
+  const topSetting = (question.settings || []).reduce<Question["settings"][number] | undefined>(
+    (best, s) => (!best || s.percentage > best.percentage ? s : best),
+    undefined
+  );
+
   return (
     <div
       className="flex justify-between flex-col border border-slate-100 bg-white px-6 py-6 transition-all ease-in-out duration-300 hover:bg-gray-100 hover:border-slate-200"
@@ -52,6 +57,12 @@ export default function QuestionCard({
             </li>
           )}
         </ul>
+      )}
+
+      {topSetting && (
+        <div className="mt-3 text-xs font-medium text-slate-500">
+          Setting: <span className="text-blue-700">{topSetting.percentage}% {topSetting.setting}</span>
+        </div>
       )}
       </Link>
 

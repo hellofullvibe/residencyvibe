@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
-import type { Comment, QuestionDetail, User } from "@/lib/types";
+import type { Comment, Program, QuestionDetail, User } from "@/lib/types";
 import { useAuth } from "@/lib/auth";
 import CategoryBadge from "@/components/CategoryBadge";
 import { StarRating, StarValue } from "@/components/StarRating";
@@ -169,8 +169,13 @@ export default function QuestionDetailPage() {
 
         <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-400">
           {q.specialty && <span>Specialty: {q.specialty}</span>}
-          {q.institutional_setting && (
-            <span>Setting: {q.institutional_setting}</span>
+          {q.settings && q.settings.some((s) => s.count > 0) && (
+            <span className="text-slate-600">
+              <span className="text-slate-400">Setting: </span>
+              {q.settings
+                .map((s) => `${s.setting} ${s.percentage.toFixed(1)}%`)
+                .join(", ")}
+            </span>
           )}
           {/* {q.frequency && <span>Frequency: {q.frequency}</span>} */}
           {q.year && <span>Year: {q.year}</span>}
@@ -382,21 +387,43 @@ function EncounterForm({
   onUpdated: () => Promise<void>;
 }) {
   const q = data.question;
-  const [program, setProgram] = useState(q.my_encounter?.program_name ?? "");
+  const [query, setQuery] = useState(q.my_encounter?.program_name ?? "");
+  const [selected, setSelected] = useState<Program | null>(null);
+  const [results, setResults] = useState<Program[]>([]);
+  const [open, setOpen] = useState(false);
+  const [showAdd, setShowAdd] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
-  useEffect(() => {
-    setProgram(q.my_encounter?.program_name ?? "");
-  }, [q.my_encounter?.program_name]);
+  async function search(s: string) {
+    setQuery(s);
+    setOpen(true);
+    if (!s.trim()) {
+      setResults([]);
+      return;
+    }
+    try {
+      const data = await api.get<Program[]>(
+        `/api/programs?q=${encodeURIComponent(s)}`
+      );
+      setResults(data);
+    } catch {
+      setResults([]);
+    }
+  }
 
   async function save() {
     setSaving(true);
+    setError("");
     try {
       await api.post(`/api/questions/${questionId}/encounter`, {
         encountered: true,
-        program_name: program,
+        program_id: selected?.id,
+        program_name: selected?.name ?? query.trim(),
       });
       await onUpdated();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Could not save encounter");
     } finally {
       setSaving(false);
     }
@@ -407,13 +434,58 @@ function EncounterForm({
       <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
         I encountered this question
       </span>
-      <div className="mt-2 flex flex-wrap items-center gap-3">
-        <input
-          value={program}
-          onChange={(e) => setProgram(e.target.value)}
-          placeholder="Program full name"
-          className="flex-1 border border-slate-100 px-4 h-14 text-sm outline-none focus:border-blue-700"
-        />
+      <div className="relative mt-2 flex flex-wrap items-center gap-3">
+        <div className="relative flex-1 min-w-[200px]">
+          <input
+            value={query}
+            onChange={(e) => search(e.target.value)}
+            onFocus={() => setOpen(true)}
+            onBlur={() => setTimeout(() => setOpen(false), 150)}
+            placeholder="Search program…"
+            className="w-full border border-slate-100 px-4 h-14 text-sm outline-none focus:border-blue-700"
+          />
+          {open && query.trim() && (
+            <ul className="absolute z-30 mt-1 max-h-60 w-full overflow-auto border border-slate-100 bg-white shadow-lg">
+              {results.length === 0 ? (
+                <li className="px-4 py-2 text-sm text-slate-400">No matches</li>
+              ) : (
+                results.map((p) => (
+                  <li key={p.id}>
+                    <button
+                      type="button"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        setSelected(p);
+                        setQuery(p.name);
+                        setOpen(false);
+                      }}
+                      className="flex w-full flex-col px-4 py-2 text-left hover:bg-slate-50"
+                    >
+                      <span className="text-sm text-slate-800">{p.name}</span>
+                      <span className="text-xs text-slate-400">
+                        {p.institutional_setting}
+                      </span>
+                    </button>
+                  </li>
+                ))
+              )}
+              <li className="border-t border-slate-100">
+                <button
+                  type="button"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    setOpen(false);
+                    setShowAdd(true);
+                  }}
+                  className="w-full px-4 py-2 text-left text-sm font-medium text-blue-700 hover:bg-blue-50"
+                >
+                  + Can&apos;t find it? Add a program
+                </button>
+              </li>
+            </ul>
+          )}
+        </div>
+
         <button
           onClick={save}
           disabled={saving}
@@ -422,6 +494,91 @@ function EncounterForm({
           {saving ? "Saving…" : "Save"}
         </button>
       </div>
+
+      {showAdd && (
+        <AddProgramForm
+          onAdded={(p) => {
+            setSelected(p);
+            setQuery(p.name);
+            setShowAdd(false);
+          }}
+        />
+      )}
+
+      {error && (
+        <p className="mt-2 text-sm text-red-600">{error}</p>
+      )}
+    </div>
+  );
+}
+
+function AddProgramForm({
+  onAdded,
+}: {
+  onAdded: (p: Program) => void;
+}) {
+  const [name, setName] = useState("");
+  const [setting, setSetting] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const settings = [
+    "Community Based",
+    "University Based",
+    "Military Based",
+    "Community Based University Affiliated",
+    "Other",
+  ];
+
+  async function submit() {
+    if (!name.trim() || !setting) return;
+    setSaving(true);
+    setError("");
+    try {
+      const p = await api.post<Program>("/api/programs", {
+        name: name.trim(),
+        institutional_setting: setting,
+      });
+      onAdded(p);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Could not add program");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="mt-3 border border-blue-100 bg-blue-50/50 p-4">
+      <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
+        Add a program
+      </span>
+      <div className="mt-2 flex flex-wrap gap-2">
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Program full name"
+          className="min-w-[200px] flex-1 border border-slate-100 bg-white px-3 py-2 text-sm outline-none focus:border-blue-700"
+        />
+        <select
+          value={setting}
+          onChange={(e) => setSetting(e.target.value)}
+          className="border border-slate-100 bg-white px-3 py-2 text-sm outline-none focus:border-blue-700"
+        >
+          <option value="">Setting…</option>
+          {settings.map((s) => (
+            <option key={s} value={s}>
+              {s}
+            </option>
+          ))}
+        </select>
+        <button
+          onClick={submit}
+          disabled={saving || !name.trim() || !setting}
+          className="bg-blue-700 cursor-pointer px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800 disabled:opacity-50"
+        >
+          {saving ? "Adding…" : "Add"}
+        </button>
+      </div>
+      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
     </div>
   );
 }

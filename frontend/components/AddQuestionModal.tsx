@@ -22,9 +22,11 @@ export default function AddQuestionModal({
     category: meta?.categories?.[0] || "About You",
     specialty: "",
     program: "",
-    institutional_setting: "",
     frequency: "",
     year: String(new Date().getFullYear()),
+    settingsType: "direct" as "direct" | "percentage",
+    directSetting: "",
+    percentage: {} as Record<string, string>,
   });
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -66,9 +68,20 @@ export default function AddQuestionModal({
     };
     if (form.specialty) body.specialty = form.specialty;
     if (form.program) body.program = form.program;
-    if (form.institutional_setting) body.institutional_setting = form.institutional_setting;
     if (form.frequency) body.frequency = form.frequency;
     if (form.year) body.year = Number(form.year);
+    if (form.settingsType === "direct") {
+      if (form.directSetting) {
+        body.settings = { type: "direct", setting: form.directSetting };
+      }
+    } else {
+      const values: Record<string, number> = {};
+      Object.entries(form.percentage).forEach(([k, v]) => {
+        const n = Number(v);
+        if (v.trim() && !isNaN(n) && n > 0) values[k] = n;
+      });
+      body.settings = { type: "percentage", values };
+    }
     try {
       const q = await api.post<Question>("/api/questions", body);
       onCreated(q);
@@ -139,19 +152,60 @@ export default function AddQuestionModal({
               className={inputCls}
             />
           </Field>
-          <Field label="Institutional setting">
-            <select
-              value={form.institutional_setting}
-              onChange={(e) => set("institutional_setting", e.target.value)}
-              className={inputCls}
-            >
-              <option value="">Select Setting</option>
-              {(meta?.institutional_settings || []).map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
+          <Field label="Settings">
+            <div className="flex gap-1">
+              {(["direct", "percentage"] as const).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => set("settingsType", t)}
+                  className={`flex-1 rounded-md border px-3 py-2 text-xs font-medium transition-colors ${
+                    form.settingsType === t
+                      ? "border-blue-700 bg-blue-700 text-white"
+                      : "border-slate-300 bg-white text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  {t === "direct" ? "Direct" : "Percentage"}
+                </button>
               ))}
-            </select>
+            </div>
+            {form.settingsType === "direct" ? (
+              <select
+                value={form.directSetting}
+                onChange={(e) => set("directSetting", e.target.value)}
+                className={inputCls}
+              >
+                <option value="">Select Setting</option>
+                {(meta?.institutional_settings || []).map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <div className="space-y-1">
+                {(meta?.institutional_settings || []).map((s) => (
+                  <div key={s} className="flex items-center gap-2">
+                    <span className="flex-1 text-xs text-slate-600">{s}</span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={form.percentage[s] ?? ""}
+                      onChange={(e) =>
+                        setForm((f) => ({
+                          ...f,
+                          percentage: { ...f.percentage, [s]: e.target.value },
+                        }))
+                      }
+                      placeholder="0"
+                      className="w-16 rounded-md border border-slate-300 bg-white px-2 py-1.5 text-right text-sm outline-none focus:border-blue-500"
+                    />
+                    <span className="text-xs text-slate-400">%</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </Field>
           <Field label="Frequency">
             <select
