@@ -23,14 +23,13 @@ export default function AddQuestionModal({
     variants: "",
     category: meta?.categories?.[0] || "About You",
     specialty: "",
-    program: "",
     frequency: "",
     year: String(new Date().getFullYear()),
     settingsType: "direct" as "direct" | "percentage",
     directSetting: "",
     percentage: {} as Record<string, string>,
   });
-  const [programOption, setProgramOption] = useState<ProgramOption | null>(null);
+  const [programOptions, setProgramOptions] = useState<ProgramOption[]>([]);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -70,7 +69,7 @@ export default function AddQuestionModal({
       category: form.category,
     };
     if (form.specialty) body.specialty = form.specialty;
-    if (programOption?.name) body.program = programOption.name;
+    if (programOptions.length > 0) body.programs = programOptions.map((p) => p.name);
     if (form.frequency) body.frequency = form.frequency;
     if (form.year) body.year = Number(form.year);
     if (form.settingsType === "direct") {
@@ -147,10 +146,11 @@ export default function AddQuestionModal({
               ))}
             </select>
           </Field>
-          <Field label="Program">
+          <Field label="Program (optional, can pick multiple)">
             <ProgramPicker
-              value={programOption}
-              onChange={(v) => setProgramOption((v as ProgramOption) ?? null)}
+              multi
+              value={programOptions}
+              onChange={(v) => setProgramOptions((v as ProgramOption[]) ?? [])}
             />
           </Field>
           <Field label="Settings">

@@ -81,7 +81,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 		conds = append(conds, "q.specialty = "+arg(v))
 	}
 	if v := q.Get("program"); v != "" {
-		conds = append(conds, "q.program = "+arg(v))
+		conds = append(conds, "(q.program = "+arg(v)+" or "+arg(v)+" = any(q.programs))")
 	}
 
 	// Institutional setting filter: matches questions with ANY share of the
@@ -250,6 +250,7 @@ type questionInput struct {
 	Category             string         `json:"category"`
 	Specialty            *string        `json:"specialty"`
 	Program              *string        `json:"program"`
+	Programs             []string       `json:"programs"`
 	InstitutionalSetting *string        `json:"institutional_setting"`
 	Frequency            *string        `json:"frequency"`
 	Year                 *int           `json:"year"`
@@ -292,6 +293,15 @@ func resolveSettings(s *SettingsInput, legacy *string) (map[string]int, *string)
 }
 
 // weightsFromMap converts a setting->weight map into the five scalar weights.
+func containsString(list []string, s string) bool {
+	for _, v := range list {
+		if v == s {
+			return true
+		}
+	}
+	return false
+}
+
 func weightsFromMap(w map[string]int) (cb, ub, mil, cbua, other int) {
 	return w["Community Based"], w["University Based"], w["Military Based"],
 		w["Community Based University Affiliated"], w["Other"]
@@ -320,6 +330,21 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		in.Variants = []string{}
 	}
 
+	// Normalize programs: multi-select array, or legacy single program.
+	progNames := []string{}
+	for _, p := range in.Programs {
+		p = strings.TrimSpace(p)
+		if p != "" && !containsString(progNames, p) {
+			progNames = append(progNames, p)
+		}
+	}
+	if len(progNames) == 0 && in.Program != nil && strings.TrimSpace(*in.Program) != "" {
+		progNames = []string{strings.TrimSpace(*in.Program)}
+	}
+	if len(progNames) > 0 {
+		in.Program = &progNames[0]
+	}
+
 	weights, direct := resolveSettings(in.Settings, in.InstitutionalSetting)
 	if in.InstitutionalSetting == nil {
 		in.InstitutionalSetting = direct
@@ -329,11 +354,12 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	var item Question
 	err := h.pool.QueryRow(r.Context(), `
 		insert into questions (text, variants, category, specialty, program, institutional_setting, frequency, year, created_by,
-			setting_community_based, setting_university_based, setting_military_based, setting_cb_university_affiliated, setting_other)
-		values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+			setting_community_based, setting_university_based, setting_military_based, setting_cb_university_affiliated, setting_other,
+			programs)
+		values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
 		returning id, text, variants, category, specialty, program, institutional_setting, frequency, year, programs, created_by, created_at, updated_at`,
 		in.Text, in.Variants, in.Category, in.Specialty, in.Program, in.InstitutionalSetting,
-		in.Frequency, in.Year, u.ID, cb, ub, mil, cbua, other,
+		in.Frequency, in.Year, u.ID, cb, ub, mil, cbua, other, progNames,
 	).Scan(&item.ID, &item.Text, &item.Variants, &item.Category, &item.Specialty,
 		&item.Program, &item.InstitutionalSetting, &item.Frequency, &item.Year,
 		&item.Programs, &item.CreatedBy, &item.CreatedAt, &item.UpdatedAt)
