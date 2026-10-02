@@ -8,7 +8,7 @@ import type { Comment, QuestionDetail, User } from "@/lib/types";
 import { useAuth } from "@/lib/auth";
 import CategoryBadge from "@/components/CategoryBadge";
 import { StarRating, StarValue } from "@/components/StarRating";
-import { ArrowLeft02Icon, Bookmark02Icon, TickDouble01Icon } from "hugeicons-react";
+import { ArrowLeft02Icon, Bookmark02Icon, Cancel01Icon, TickDouble01Icon } from "hugeicons-react";
 
 export default function QuestionDetailPage() {
   const params = useParams<{ id: string }>();
@@ -17,6 +17,7 @@ export default function QuestionDetailPage() {
   const [data, setData] = useState<QuestionDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [newVariant, setNewVariant] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -28,6 +29,27 @@ export default function QuestionDetailPage() {
       );
     }
   }, [id]);
+
+  async function addVariant() {
+    if (!user || !newVariant.trim()) return;
+    try {
+      await api.post(`/api/questions/${id}/variants`, { text: newVariant.trim() });
+      setNewVariant("");
+      await load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Could not add variant");
+    }
+  }
+
+  async function deleteVariant(index: number) {
+    if (!user) return;
+    try {
+      await api.del(`/api/questions/${id}/variants/${index}`);
+      await load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Could not delete variant");
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -245,6 +267,67 @@ export default function QuestionDetailPage() {
         )}
 
         {user && <EncounterForm questionId={id} data={data} onUpdated={load} />}
+      </div>
+
+      {/* Variants card */}
+      <div className="mt-1 border border-slate-100 bg-white px-6 py-8">
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-semibold text-slate-900">Variants</h2>
+          <span className="text-sm font-medium text-slate-500">
+            {q.variants.length} variant{q.variants.length !== 1 ? "s" : ""}
+          </span>
+        </div>
+        {q.variants.length === 0 ? (
+          <p className="mt-2 text-sm text-slate-500">
+            No variants yet. Add one below.
+          </p>
+        ) : (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {q.variants.map((v, i) => (
+              <span
+                key={i}
+                className="flex items-center justify-center gap-2 rounded-full bg-slate-50 px-4 font-medium text-sm text-slate-700"
+              >
+                {v}
+                {user && (
+                  <button
+                    onClick={() => deleteVariant(i)}
+                    className="cursor-pointer text-slate-400 transition-colors hover:text-red-600"
+                    aria-label="Delete variant"
+                  >
+                    <Cancel01Icon size={14} strokeWidth={2} />
+                  </button>
+                )}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {user ? (
+          <div className="mt-4 flex gap-2">
+            <input
+              value={newVariant}
+              onChange={(e) => setNewVariant(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && addVariant()}
+              placeholder="Add a variant…"
+              className="h-11 flex-1 rounded-full border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-blue-500"
+            />
+            <button
+              onClick={addVariant}
+              disabled={!newVariant.trim()}
+              className="h-11 cursor-pointer rounded-full bg-blue-700 px-5 text-sm font-semibold text-white transition-colors hover:bg-blue-800 disabled:opacity-50"
+            >
+              Add
+            </button>
+          </div>
+        ) : (
+          <p className="mt-4 text-sm text-slate-500">
+            <Link href="/signup" className="font-medium underline">
+              Sign in
+            </Link>{" "}
+            to add variants.
+          </p>
+        )}
       </div>
 
       

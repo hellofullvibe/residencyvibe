@@ -1,6 +1,7 @@
 package questions
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"log"
@@ -426,4 +427,139 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	respond.JSON(w, http.StatusOK, map[string]string{"message": "deleted"})
+}
+
+// AddVariant lets any signed-in user append a variant to a question.
+func (h *Handler) AddVariant(w http.ResponseWriter, r *http.Request) {
+	u := auth.UserFrom(r)
+	if u == nil {
+		respond.Error(w, http.StatusUnauthorized, "not authenticated")
+		return
+	}
+	id, err := uuid.Parse(r.PathValue("id"))
+	if err != nil {
+		respond.Error(w, http.StatusBadRequest, "invalid question id")
+		return
+	}
+	var in struct {
+		Text string `json:"text"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+		respond.Error(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	in.Text = strings.TrimSpace(in.Text)
+	if in.Text == "" {
+		respond.Error(w, http.StatusBadRequest, "variant text is required")
+		return
+	}
+
+	_, err = h.pool.Exec(r.Context(), `
+		update questions
+		set variants = case when $2 = any(variants) then variants else array_append(variants, $2) end,
+		    updated_at = now()
+		where id = $1`, id, in.Text)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			respond.Error(w, http.StatusNotFound, "question not found")
+			return
+		}
+		log.Printf("add variant error: %v", err)
+		respond.Error(w, http.StatusInternalServerError, "could not add variant")
+		return
+	}
+
+	item, err := h.fetchQuestion(r.Context(), id)
+	if err != nil {
+		respond.Error(w, http.StatusInternalServerError, "could not load question")
+		return
+	}
+	if u := auth.UserFrom(r); u != nil {
+		list := []Question{item}
+		h.attachUserState(r, u.ID, list)
+		item = list[0]
+	}
+	respond.JSON(w, http.StatusOK, item)
+}
+
+// DeleteVariant lets any signed-in user remove a variant by its index.
+func (h *Handler) DeleteVariant(w http.ResponseWriter, r *http.Request) {
+	u := auth.UserFrom(r)
+	if u == nil {
+		respond.Error(w, http.StatusUnauthorized, "not authenticated")
+		return
+	}
+	id, err := uuid.Parse(r.PathValue("id"))
+	if err != nil {
+		respond.Error(w, http.StatusBadRequest, "invalid question id")
+		return
+	}
+	idx, err := strconv.Atoi(r.PathValue("index"))
+	if err != nil || idx < 0 {
+		respond.Error(w, http.StatusBadRequest, "invalid variant index")
+		return
+	}
+
+	var variants []string
+	err = h.pool.QueryRow(r.Context(),
+		`select variants from questions where id = $1`, id).Scan(&variants)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			respond.Error(w, http.StatusNotFound, "question not found")
+			return
+		}
+		log.Printf("delete variant load error: %v", err)
+		respond.Error(w, http.StatusInternalServerError, "could not delete variant")
+		return
+	}
+	if idx >= len(variants) {
+		respond.Error(w, http.StatusBadRequest, "invalid variant index")
+		return
+	}
+	variants = append(variants[:idx], variants[idx+1:]...)
+	if variants == nil {
+		variants = []string{}
+	}
+
+	_, err = h.pool.Exec(r.Context(),
+		`update questions set variants = $1, updated_at = now() where id = $2`, variants, id)
+	if err != nil {
+		log.Printf("delete variant error: %v", err)
+		respond.Error(w, http.StatusInternalServerError, "could not delete variant")
+		return
+	}
+
+	item, err := h.fetchQuestion(r.Context(), id)
+	if err != nil {
+		respond.Error(w, http.StatusInternalServerError, "could not load question")
+		return
+	}
+	if u := auth.UserFrom(r); u != nil {
+		list := []Question{item}
+		h.attachUserState(r, u.ID, list)
+		item = list[0]
+	}
+	respond.JSON(w, http.StatusOK, item)
+}
+
+// fetchQuestion loads a single question with its average star rating.
+func (h *Handler) fetchQuestion(ctx context.Context, id uuid.UUID) (Question, error) {
+	var item Question
+	err := h.pool.QueryRow(ctx, `
+		select q.id, q.text, q.variants, q.category, q.specialty, q.program,
+		       q.institutional_setting, q.frequency, q.year, s.star, q.programs,
+		       q.created_by, q.created_at, q.updated_at,
+		       (select count(*) from comments c where c.question_id = q.id and c.parent_id is null) as comment_count,
+		       (select count(*) from encounters e where e.question_id = q.id and e.encountered) as encounter_count
+		from questions q
+		cross join lateral (
+		  select `+starExpr+`
+		  from ratings r where r.question_id = q.id
+		) s
+		where q.id = $1`, id,
+	).Scan(&item.ID, &item.Text, &item.Variants, &item.Category, &item.Specialty,
+		&item.Program, &item.InstitutionalSetting, &item.Frequency, &item.Year,
+		&item.Star, &item.Programs, &item.CreatedBy, &item.CreatedAt, &item.UpdatedAt,
+		&item.CommentCount, &item.EncounterCount)
+	return item, err
 }

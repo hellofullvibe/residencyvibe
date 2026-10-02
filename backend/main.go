@@ -54,6 +54,8 @@ func main() {
 	mux.HandleFunc("POST /api/questions/{id}/rate", auth.RequireAuth(pool, questionH.Rate))
 	mux.HandleFunc("DELETE /api/questions/{id}", auth.RequireAuth(pool, questionH.Delete))
 	mux.HandleFunc("POST /api/questions/{id}/comments", auth.RequireAuth(pool, questionH.CreateComment))
+	mux.HandleFunc("POST /api/questions/{id}/variants", auth.RequireAuth(pool, questionH.AddVariant))
+	mux.HandleFunc("DELETE /api/questions/{id}/variants/{index}", auth.RequireAuth(pool, questionH.DeleteVariant))
 	mux.HandleFunc("POST /api/comments/{id}/replies", auth.RequireAuth(pool, questionH.CreateReply))
 	mux.HandleFunc("POST /api/questions/{id}/encounter", auth.RequireAuth(pool, questionH.RecordEncounter))
 	mux.HandleFunc("POST /api/questions/{id}/save", auth.RequireAuth(pool, questionH.Save))
