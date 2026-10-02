@@ -234,14 +234,23 @@ export default function QuestionDetailPage() {
         </div>
       </div>
 
-      {/* {q.my_encounter && q.my_encounter.encountered && (
-        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">
-          You encountered
-          {q.my_encounter.program_name
-            ? ` at ${q.my_encounter.program_name}`
-            : ""}
-        </span>
-      )} */}
+      {q.my_encounters && q.my_encounters.length > 0 && (
+        <div className="mt-1 border border-slate-100 bg-white px-6 py-4">
+          <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
+            You encountered this at
+          </span>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {q.my_encounters.map((n) => (
+              <span
+                key={n}
+                className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800"
+              >
+                {n}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Recent encounters card */}
       <div className="mt-1 border border-slate-100 bg-white px-6 py-8">
@@ -387,8 +396,10 @@ function EncounterForm({
   onUpdated: () => Promise<void>;
 }) {
   const q = data.question;
-  const [query, setQuery] = useState(q.my_encounter?.program_name ?? "");
-  const [selected, setSelected] = useState<Program | null>(null);
+  const [query, setQuery] = useState("");
+  const [selected, setSelected] = useState<{ id?: string; name: string }[]>(
+    (q.my_encounters ?? []).map((n) => ({ name: n }))
+  );
   const [results, setResults] = useState<Program[]>([]);
   const [open, setOpen] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
@@ -412,14 +423,22 @@ function EncounterForm({
     }
   }
 
+  function toggleProgram(p: Program) {
+    setSelected((prev) => {
+      const exists = prev.some((x) => x.name === p.name);
+      if (exists) return prev.filter((x) => x.name !== p.name);
+      return [...prev, { id: p.id, name: p.name }];
+    });
+  }
+
   async function save() {
     setSaving(true);
     setError("");
     try {
       await api.post(`/api/questions/${questionId}/encounter`, {
-        encountered: true,
-        program_id: selected?.id,
-        program_name: selected?.name ?? query.trim(),
+        encountered: selected.length > 0,
+        program_ids: selected.filter((x) => x.id).map((x) => x.id as string),
+        program_names: selected.filter((x) => !x.id).map((x) => x.name),
       });
       await onUpdated();
     } catch (err) {
@@ -429,19 +448,21 @@ function EncounterForm({
     }
   }
 
+  const selectedNames = selected.map((s) => s.name);
+
   return (
     <div className="mt-6">
       <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
-        I encountered this question
+        I encountered this question at
       </span>
-      <div className="relative mt-2 flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 min-w-[200px]">
+      <div className="relative mt-2">
+        <div className="relative">
           <input
             value={query}
             onChange={(e) => search(e.target.value)}
             onFocus={() => setOpen(true)}
             onBlur={() => setTimeout(() => setOpen(false), 150)}
-            placeholder="Search program…"
+            placeholder="Search programs…"
             className="w-full border border-slate-100 px-4 h-14 text-sm outline-none focus:border-blue-700"
           />
           {open && query.trim() && (
@@ -449,25 +470,27 @@ function EncounterForm({
               {results.length === 0 ? (
                 <li className="px-4 py-2 text-sm text-slate-400">No matches</li>
               ) : (
-                results.map((p) => (
-                  <li key={p.id}>
-                    <button
-                      type="button"
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        setSelected(p);
-                        setQuery(p.name);
-                        setOpen(false);
-                      }}
-                      className="flex w-full flex-col px-4 py-2 text-left hover:bg-slate-50"
-                    >
-                      <span className="text-sm text-slate-800">{p.name}</span>
-                      <span className="text-xs text-slate-400">
-                        {p.institutional_setting}
-                      </span>
-                    </button>
-                  </li>
-                ))
+                results.map((p) => {
+                  const checked = selectedNames.includes(p.name);
+                  return (
+                    <li key={p.id}>
+                      <label className="flex items-center gap-3 px-4 py-2 hover:bg-slate-50 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleProgram(p)}
+                          className="accent-blue-700"
+                        />
+                        <span className="flex flex-col">
+                          <span className="text-sm text-slate-800">{p.name}</span>
+                          <span className="text-xs text-slate-400">
+                            {p.institutional_setting}
+                          </span>
+                        </span>
+                      </label>
+                    </li>
+                  );
+                })
               )}
               <li className="border-t border-slate-100">
                 <button
@@ -486,10 +509,32 @@ function EncounterForm({
           )}
         </div>
 
+        {selected.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-2">
+            {selected.map((s) => (
+              <span
+                key={s.name}
+                className="flex items-center gap-1 rounded-full bg-slate-50 px-3 py-1 text-xs text-slate-700"
+              >
+                {s.name}
+                <button
+                  onClick={() =>
+                    setSelected((prev) => prev.filter((x) => x.name !== s.name))
+                  }
+                  className="text-slate-400 hover:text-red-600"
+                  aria-label={`Remove ${s.name}`}
+                >
+                  <Cancel01Icon size={13} strokeWidth={2} />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+
         <button
           onClick={save}
           disabled={saving}
-          className="w-full sm:w-auto bg-blue-700/10 cursor-pointer h-14 px-4 text-sm font-semibold text-blue-700 hover:text-white transition-all ease-in-out duration-300 hover:bg-blue-700 disabled:pointer-events-none disabled:opacity-60"
+          className="mt-3 w-full sm:w-auto bg-blue-700/10 cursor-pointer h-14 px-4 text-sm font-semibold text-blue-700 hover:text-white transition-all ease-in-out duration-300 hover:bg-blue-700 disabled:pointer-events-none disabled:opacity-60"
         >
           {saving ? "Saving…" : "Save"}
         </button>
@@ -498,16 +543,17 @@ function EncounterForm({
       {showAdd && (
         <AddProgramForm
           onAdded={(p) => {
-            setSelected(p);
-            setQuery(p.name);
+            setSelected((prev) =>
+              prev.some((x) => x.name === p.name)
+                ? prev
+                : [...prev, { id: p.id, name: p.name }]
+            );
             setShowAdd(false);
           }}
         />
       )}
 
-      {error && (
-        <p className="mt-2 text-sm text-red-600">{error}</p>
-      )}
+      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
     </div>
   );
 }

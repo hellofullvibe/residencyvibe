@@ -46,7 +46,7 @@ export interface Question {
   encounter_count: number;
   settings: SettingShare[];
   my_rating?: number;
-  my_encounter?: Encounter;
+  my_encounters?: string[];
   saved: boolean;
 }
 

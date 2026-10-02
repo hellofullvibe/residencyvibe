@@ -10,8 +10,9 @@ import (
 	"github.com/gulam/interviewprep/backend/internal/respond"
 )
 
-// RecordEncounter upserts "I encountered (yes/no) at program X" and adds the
-// program name to the question's aggregate program list.
+// RecordEncounter records ALL programs where the user encountered the question
+// (search + checkbox multi-select). It replaces the user's previous program set.
+// Backward compatible with a single {program_id} or {program_name}.
 func (h *Handler) RecordEncounter(w http.ResponseWriter, r *http.Request) {
 	u := auth.UserFrom(r)
 	if u == nil {
@@ -24,64 +25,113 @@ func (h *Handler) RecordEncounter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var in struct {
-		Encountered bool       `json:"encountered"`
-		ProgramID   *uuid.UUID `json:"program_id"`
-		ProgramName string     `json:"program_name"`
+		Encountered  bool        `json:"encountered"`
+		ProgramIDs   []uuid.UUID `json:"program_ids"`
+		ProgramNames []string    `json:"program_names"`
+		ProgramID    *uuid.UUID  `json:"program_id"`
+		ProgramName  string      `json:"program_name"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
 		respond.Error(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	in.ProgramName = strings.TrimSpace(in.ProgramName)
 
-	// When a program is selected, resolve its name and setting from the mapping.
-	if in.ProgramID != nil {
-		var name string
-		err := h.pool.QueryRow(r.Context(),
-			`select name from programs where id = $1`, *in.ProgramID).Scan(&name)
-		if err != nil {
-			respond.Error(w, http.StatusBadRequest, "program not found")
-			return
+	// Normalize into a list of program ids. Legacy single forms map to one element.
+	ids := in.ProgramIDs
+	if len(ids) == 0 && in.ProgramID != nil {
+		ids = []uuid.UUID{*in.ProgramID}
+	}
+	// Resolve program names to ids (skip ones not in the mapping).
+	for _, name := range in.ProgramNames {
+		name = strings.TrimSpace(name)
+		if name == "" {
+			continue
 		}
-		in.ProgramName = name
+		if p, err := h.resolveProgramByName(r, name); err == nil && p.ID != uuid.Nil {
+			ids = append(ids, p.ID)
+		}
+	}
+	if len(ids) == 0 && strings.TrimSpace(in.ProgramName) != "" {
+		if p, err := h.resolveProgramByName(r, strings.TrimSpace(in.ProgramName)); err != nil {
+			respond.Error(w, http.StatusInternalServerError, "could not resolve program")
+			return
+		} else if p.ID != uuid.Nil {
+			ids = []uuid.UUID{p.ID}
+		}
 	}
 
-	_, err = h.pool.Exec(r.Context(), `
-		insert into encounters (question_id, user_id, encountered, program_name, program_id)
-		values ($1, $2, $3, $4, $5)
-		on conflict (question_id, user_id)
-		do update set encountered = excluded.encountered, program_name = excluded.program_name, program_id = excluded.program_id`,
-		questionID, u.ID, in.Encountered, nullIfEmpty(in.ProgramName), in.ProgramID)
-	if err != nil {
-		respond.Error(w, http.StatusInternalServerError, "could not record encounter")
+	// Deduplicate ids.
+	seen := map[uuid.UUID]bool{}
+	uniq := []uuid.UUID{}
+	for _, id := range ids {
+		if !seen[id] {
+			seen[id] = true
+			uniq = append(uniq, id)
+		}
+	}
+	ids = uniq
+
+	// Replace the user's program set for this question.
+	if _, err := h.pool.Exec(r.Context(),
+		`delete from encounters where question_id = $1 and user_id = $2`, questionID, u.ID); err != nil {
+		respond.Error(w, http.StatusInternalServerError, "could not update encounter")
 		return
 	}
 
-	// Add the program to the question's aggregate list (once), and stamp the current year.
-	if in.Encountered && in.ProgramName != "" {
-		if _, err := h.pool.Exec(r.Context(), `
-			update questions
-			set programs = case when $2 = any(programs) then programs else programs || $2::text end,
-			    year = extract(year from now())::int,
-			    updated_at = now()
-			where id = $1`, questionID, in.ProgramName); err != nil {
-			respond.Error(w, http.StatusInternalServerError, "could not update program list")
+	names := []string{}
+	for _, pid := range ids {
+		name, err := h.programName(r, pid)
+		if err != nil {
+			respond.Error(w, http.StatusBadRequest, "program not found: "+pid.String())
 			return
 		}
-	} else if in.Encountered {
-		// Encountered but no program name — still stamp the year.
 		if _, err := h.pool.Exec(r.Context(), `
-			update questions set year = extract(year from now())::int, updated_at = now()
-			where id = $1`, questionID); err != nil {
-			respond.Error(w, http.StatusInternalServerError, "could not update year")
+			insert into encounters (question_id, user_id, encountered, program_name, program_id)
+			values ($1, $2, true, $3, $4)`,
+			questionID, u.ID, name, pid); err != nil {
+			respond.Error(w, http.StatusInternalServerError, "could not record encounter")
+			return
+		}
+		names = append(names, name)
+	}
+
+	// Add the programs to the question's aggregate list (deduped) and stamp year.
+	if len(names) > 0 {
+		if _, err := h.pool.Exec(r.Context(), `
+			update questions
+			set programs = (select array_agg(distinct x) from unnest(programs || $2::text[]) x),
+			    year = extract(year from now())::int,
+			    updated_at = now()
+			where id = $1`, questionID, names); err != nil {
+			respond.Error(w, http.StatusInternalServerError, "could not update program list")
 			return
 		}
 	}
 
 	respond.JSON(w, http.StatusOK, map[string]any{
-		"encountered":  in.Encountered,
-		"program_name": in.ProgramName,
+		"encountered": len(names) > 0,
+		"programs":    names,
 	})
+}
+
+// resolveProgramByName finds a program by exact name (used for legacy input).
+func (h *Handler) resolveProgramByName(r *http.Request, name string) (ProgramRef, error) {
+	var p ProgramRef
+	err := h.pool.QueryRow(r.Context(),
+		`select id, name from programs where lower(name) = lower($1) limit 1`, name).Scan(&p.ID, &p.Name)
+	return p, err
+}
+
+type ProgramRef struct {
+	ID   uuid.UUID
+	Name string
+}
+
+func (h *Handler) programName(r *http.Request, id uuid.UUID) (string, error) {
+	var name string
+	err := h.pool.QueryRow(r.Context(),
+		`select name from programs where id = $1`, id).Scan(&name)
+	return name, err
 }
 
 // Save adds a question to the user's saved list.

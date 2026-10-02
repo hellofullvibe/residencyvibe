@@ -206,7 +206,7 @@ func settingFilterSQL(setting, col string, minPct int) string {
 	return "(" + num + " * 100.0 / nullif(" + den + ", 0) >= " + strconv.Itoa(minPct) + ")"
 }
 
-// attachUserState fills my_rating, my_encounter and saved for the current user.
+// attachUserState fills my_rating, my_encounters and saved for the current user.
 func (h *Handler) attachUserState(r *http.Request, userID uuid.UUID, items []Question) {
 	for i := range items {
 		var myRating int
@@ -218,15 +218,22 @@ func (h *Handler) attachUserState(r *http.Request, userID uuid.UUID, items []Que
 			items[i].MyRating = &myRating
 		}
 
-		var enc Encounter
-		err = h.pool.QueryRow(r.Context(), `
-			select encountered, coalesce(program_name, '')
-			from encounters where question_id = $1 and user_id = $2`,
-			items[i].ID, userID,
-		).Scan(&enc.Encountered, &enc.ProgramName)
+		rows, err := h.pool.Query(r.Context(), `
+			select coalesce(program_name, '') from encounters
+			where question_id = $1 and user_id = $2
+			order by created_at asc`, items[i].ID, userID)
 		if err == nil {
-			items[i].MyEncounter = &enc
+			names := []string{}
+			for rows.Next() {
+				var n string
+				if err := rows.Scan(&n); err == nil && n != "" {
+					names = append(names, n)
+				}
+			}
+			rows.Close()
+			items[i].MyEncounters = names
 		}
+
 		err = h.pool.QueryRow(r.Context(), `
 			select exists(select 1 from saved_questions where question_id = $1 and user_id = $2)`,
 			items[i].ID, userID,

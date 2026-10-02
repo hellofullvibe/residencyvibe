@@ -78,9 +78,9 @@ type Question struct {
 	SettingOther           int            `json:"-"`
 	EncounterSettings      map[string]int `json:"-"`
 
-	MyRating    *int       `json:"my_rating,omitempty"`
-	MyEncounter *Encounter `json:"my_encounter,omitempty"`
-	Saved       bool       `json:"saved"`
+	MyRating     *int     `json:"my_rating,omitempty"`
+	MyEncounters []string `json:"my_encounters,omitempty"`
+	Saved        bool     `json:"saved"`
 }
 
 type Encounter struct {
