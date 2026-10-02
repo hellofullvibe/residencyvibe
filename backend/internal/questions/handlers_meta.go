@@ -20,8 +20,9 @@ var defaultSpecialties = []string{
 var defaultInstitutionalSettings = []string{
 	"Community Based",
 	"University Based",
-	"Community Based University Affiliated",
 	"Military Based",
+	"Community Based University Affiliated",
+	"Other",
 }
 
 var defaultFrequencies = []string{"Most", "Sometimes", "Rare"}

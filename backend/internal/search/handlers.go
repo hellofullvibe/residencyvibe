@@ -37,16 +37,12 @@ func (h *Handler) Search(w http.ResponseWriter, r *http.Request) {
 
 	// --- questions ---
 	questionsRows, err := h.pool.Query(r.Context(), `
-		select q.id, q.text, q.variants, q.category, q.specialty, q.program,
-		       q.institutional_setting, q.frequency, q.year, rt.star, q.programs,
-		       q.created_by, q.created_at, q.updated_at,
-		       (select count(*) from comments c where c.question_id = q.id and c.parent_id is null) as comment_count,
-		       (select count(*) from encounters e where e.question_id = q.id and e.encountered) as encounter_count
+		select `+questions.SelectCols+`
 		from questions q
 		cross join lateral (
 		  select coalesce(round(avg(r.star)::numeric, 1), 0) as star
 		  from ratings r where r.question_id = q.id
-		) rt
+		) s
 		where to_tsvector('english', q.text) @@ to_tsquery('english', $1)
 		   or q.text ilike '%' || $2 || '%'
 		   or exists (select 1 from unnest(q.variants) v where v ilike '%' || $2 || '%')
@@ -63,8 +59,11 @@ func (h *Handler) Search(w http.ResponseWriter, r *http.Request) {
 			&item.ID, &item.Text, &item.Variants, &item.Category, &item.Specialty,
 			&item.Program, &item.InstitutionalSetting, &item.Frequency, &item.Year,
 			&item.Star, &item.Programs, &item.CreatedBy, &item.CreatedAt, &item.UpdatedAt,
+			&item.SettingCommunityBased, &item.SettingUniversityBased, &item.SettingMilitaryBased,
+			&item.SettingCBUA, &item.SettingOther, &item.EncounterSettings,
 			&item.CommentCount, &item.EncounterCount,
 		); err == nil {
+			item.Settings = questions.ComputeSettings(questions.Weights(item), item.EncounterSettings)
 			questionResults = append(questionResults, item)
 		}
 	}

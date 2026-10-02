@@ -10,6 +10,7 @@ import (
 	"github.com/gulam/interviewprep/backend/internal/db"
 	"github.com/gulam/interviewprep/backend/internal/middleware"
 	"github.com/gulam/interviewprep/backend/internal/partners"
+	"github.com/gulam/interviewprep/backend/internal/programs"
 	"github.com/gulam/interviewprep/backend/internal/questions"
 	"github.com/gulam/interviewprep/backend/internal/search"
 	"github.com/joho/godotenv"
@@ -34,6 +35,7 @@ func main() {
 	questionH := questions.NewHandler(pool)
 	searchH := search.NewHandler(pool)
 	partnerH := partners.NewHandler(pool)
+	programH := programs.NewHandler(pool)
 
 	mux := http.NewServeMux()
 
@@ -64,6 +66,10 @@ func main() {
 
 	// --- search ---
 	mux.HandleFunc("GET /api/search", auth.OptionalAuth(pool, searchH.Search))
+
+	// --- programs (institutional setting mapping) ---
+	mux.HandleFunc("GET /api/programs", programH.Search)
+	mux.HandleFunc("POST /api/programs", auth.RequireAuth(pool, programH.Create))
 
 	// --- find partner ---
 	mux.HandleFunc("GET /api/partners", auth.OptionalAuth(pool, partnerH.List))

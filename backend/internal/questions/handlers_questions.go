@@ -26,6 +26,45 @@ const starExpr = `
 		coalesce(round(avg(r.star)::numeric, 1), 0) as star
 	`
 
+// encounterSettingsExpr aggregates a question's encounter-derived setting counts
+// into a jsonb object like {"Community Based": 2}. References the outer alias q.
+const encounterSettingsExpr = `
+	coalesce((
+		select jsonb_object_agg(x.setting, x.cnt)
+		from (
+			select p.institutional_setting as setting, count(*) as cnt
+			from encounters e
+			join programs p on p.id = e.program_id
+			where e.question_id = q.id and e.encountered and e.program_id is not null
+			group by p.institutional_setting
+		) x
+	), '{}'::jsonb)`
+
+// SelectCols is the shared column list (without the trailing comment/encounter
+// counts) for question selects. Must be used with a lateral `s` (star) and the
+// q alias.
+const SelectCols = `
+		q.id, q.text, q.variants, q.category, q.specialty, q.program,
+		q.institutional_setting, q.frequency, q.year, s.star, q.programs,
+		q.created_by, q.created_at, q.updated_at,
+		q.setting_community_based, q.setting_university_based, q.setting_military_based,
+		q.setting_cb_university_affiliated, q.setting_other,
+		` + encounterSettingsExpr + ` as encounter_settings,
+		(select count(*) from comments c where c.question_id = q.id and c.parent_id is null) as comment_count,
+		(select count(*) from encounters e where e.question_id = q.id and e.encountered) as encounter_count`
+
+// scanQuestion scans a full question row produced by SelectCols.
+func scanQuestion(scan func(dest ...any) error, item *Question) error {
+	return scan(
+		&item.ID, &item.Text, &item.Variants, &item.Category, &item.Specialty,
+		&item.Program, &item.InstitutionalSetting, &item.Frequency, &item.Year,
+		&item.Star, &item.Programs, &item.CreatedBy, &item.CreatedAt, &item.UpdatedAt,
+		&item.SettingCommunityBased, &item.SettingUniversityBased, &item.SettingMilitaryBased,
+		&item.SettingCBUA, &item.SettingOther, &item.EncounterSettings,
+		&item.CommentCount, &item.EncounterCount,
+	)
+}
+
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	conds := []string{"1=1"}
@@ -44,9 +83,24 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	if v := q.Get("program"); v != "" {
 		conds = append(conds, "q.program = "+arg(v))
 	}
-	if v := q.Get("institutional_setting"); v != "" {
-		conds = append(conds, "q.institutional_setting = "+arg(v))
+
+	// Institutional setting filter: matches questions with ANY share of the
+	// setting (>0%). A min_percent narrows it to questions whose share of that
+	// setting is at least min_percent.
+	setting := q.Get("institutional_setting")
+	if setting != "" {
+		col := settingColumn(setting)
+		if col != "" {
+			minPct := 0
+			if v := q.Get("min_percent"); v != "" {
+				if n, err := strconv.Atoi(v); err == nil {
+					minPct = n
+				}
+			}
+			conds = append(conds, settingFilterSQL(setting, col, minPct))
+		}
 	}
+
 	if v := q.Get("frequency"); v != "" {
 		conds = append(conds, "q.frequency = "+arg(v))
 	}
@@ -83,11 +137,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 
 	where := strings.Join(conds, " and ")
 	sql := `
-		select q.id, q.text, q.variants, q.category, q.specialty, q.program,
-		       q.institutional_setting, q.frequency, q.year, s.star, q.programs,
-		       q.created_by, q.created_at, q.updated_at,
-		       (select count(*) from comments c where c.question_id = q.id and c.parent_id is null) as comment_count,
-		       (select count(*) from encounters e where e.question_id = q.id and e.encountered) as encounter_count
+		select ` + SelectCols + `
 		from questions q
 		cross join lateral (
 		  select ` + starExpr + `
@@ -108,15 +158,11 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	items := []Question{}
 	for rows.Next() {
 		var item Question
-		if err := rows.Scan(
-			&item.ID, &item.Text, &item.Variants, &item.Category, &item.Specialty,
-			&item.Program, &item.InstitutionalSetting, &item.Frequency, &item.Year,
-			&item.Star, &item.Programs, &item.CreatedBy, &item.CreatedAt, &item.UpdatedAt,
-			&item.CommentCount, &item.EncounterCount,
-		); err != nil {
+		if err := scanQuestion(rows.Scan, &item); err != nil {
 			respond.Error(w, http.StatusInternalServerError, "could not scan questions")
 			return
 		}
+		item.Settings = ComputeSettings(Weights(item), item.EncounterSettings)
 		items = append(items, item)
 	}
 
@@ -126,6 +172,38 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respond.JSON(w, http.StatusOK, items)
+}
+
+// weights returns the base setting weights as a map keyed by setting name.
+func Weights(q Question) map[string]int {
+	return map[string]int{
+		"Community Based":                       q.SettingCommunityBased,
+		"University Based":                      q.SettingUniversityBased,
+		"Military Based":                        q.SettingMilitaryBased,
+		"Community Based University Affiliated": q.SettingCBUA,
+		"Other":                                 q.SettingOther,
+	}
+}
+
+// settingFilterSQL builds the WHERE condition for a setting + min percent.
+// num/denom mirror computeSettings so filters match displayed percentages.
+func settingFilterSQL(setting, col string, minPct int) string {
+	if minPct <= 0 {
+		// any share (> 0): base weight present OR any encounter at this setting.
+		return "(" + col + " > 0 or exists(" +
+			"select 1 from encounters e join programs p on p.id = e.program_id " +
+			"where e.question_id = q.id and e.encountered and p.institutional_setting = '" + setting + "') )"
+	}
+	encAt := `(select count(*) from encounters e join programs p on p.id = e.program_id
+	            where e.question_id = q.id and e.encountered and p.institutional_setting = '` + setting + `')`
+	totalEnc := `(select count(*) from encounters e2 join programs p2 on p2.id = e2.program_id
+	              where e2.question_id = q.id and e2.encountered)`
+	totalBase := `(q.setting_community_based + q.setting_university_based + q.setting_military_based
+	              + q.setting_cb_university_affiliated + q.setting_other)`
+
+	num := "(" + col + " + coalesce(" + encAt + ", 0))"
+	den := "(" + totalBase + " + coalesce(" + totalEnc + ", 0))"
+	return "(" + num + " * 100.0 / nullif(" + den + ", 0) >= " + strconv.Itoa(minPct) + ")"
 }
 
 // attachUserState fills my_rating, my_encounter and saved for the current user.
@@ -160,14 +238,56 @@ func (h *Handler) attachUserState(r *http.Request, userID uuid.UUID, items []Que
 }
 
 type questionInput struct {
-	Text                 string   `json:"text"`
-	Variants             []string `json:"variants"`
-	Category             string   `json:"category"`
-	Specialty            *string  `json:"specialty"`
-	Program              *string  `json:"program"`
-	InstitutionalSetting *string  `json:"institutional_setting"`
-	Frequency            *string  `json:"frequency"`
-	Year                 *int     `json:"year"`
+	Text                 string         `json:"text"`
+	Variants             []string       `json:"variants"`
+	Category             string         `json:"category"`
+	Specialty            *string        `json:"specialty"`
+	Program              *string        `json:"program"`
+	InstitutionalSetting *string        `json:"institutional_setting"`
+	Frequency            *string        `json:"frequency"`
+	Year                 *int           `json:"year"`
+	Settings             *SettingsInput `json:"settings"`
+}
+
+type SettingsInput struct {
+	Type    string         `json:"type"` // "direct" | "percentage"
+	Setting string         `json:"setting"`
+	Values  map[string]int `json:"values"`
+}
+
+// resolveSettings turns the settings input (direct or percentage) into weights.
+// Falls back to the legacy single institutional_setting. Returns the weights and
+// the direct setting to store on institutional_setting for backward compat.
+func resolveSettings(s *SettingsInput, legacy *string) (map[string]int, *string) {
+	w := map[string]int{}
+	var direct *string
+	if s != nil {
+		switch s.Type {
+		case "direct":
+			if settingColumn(s.Setting) != "" {
+				w[s.Setting] = 1
+				v := s.Setting
+				direct = &v
+			}
+		case "percentage":
+			for k, v := range s.Values {
+				if settingColumn(k) != "" && v > 0 {
+					w[k] = v
+				}
+			}
+		}
+	}
+	if len(w) == 0 && legacy != nil && settingColumn(*legacy) != "" {
+		w[*legacy] = 1
+		direct = legacy
+	}
+	return w, direct
+}
+
+// weightsFromMap converts a setting->weight map into the five scalar weights.
+func weightsFromMap(w map[string]int) (cb, ub, mil, cbua, other int) {
+	return w["Community Based"], w["University Based"], w["Military Based"],
+		w["Community Based University Affiliated"], w["Other"]
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
@@ -193,21 +313,29 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		in.Variants = []string{}
 	}
 
+	weights, direct := resolveSettings(in.Settings, in.InstitutionalSetting)
+	if in.InstitutionalSetting == nil {
+		in.InstitutionalSetting = direct
+	}
+	cb, ub, mil, cbua, other := weightsFromMap(weights)
+
 	var item Question
 	err := h.pool.QueryRow(r.Context(), `
-		insert into questions (text, variants, category, specialty, program, institutional_setting, frequency, year, created_by)
-		values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		insert into questions (text, variants, category, specialty, program, institutional_setting, frequency, year, created_by,
+			setting_community_based, setting_university_based, setting_military_based, setting_cb_university_affiliated, setting_other)
+		values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 		returning id, text, variants, category, specialty, program, institutional_setting, frequency, year, programs, created_by, created_at, updated_at`,
 		in.Text, in.Variants, in.Category, in.Specialty, in.Program, in.InstitutionalSetting,
-		in.Frequency, in.Year, u.ID,
+		in.Frequency, in.Year, u.ID, cb, ub, mil, cbua, other,
 	).Scan(&item.ID, &item.Text, &item.Variants, &item.Category, &item.Specialty,
 		&item.Program, &item.InstitutionalSetting, &item.Frequency, &item.Year,
 		&item.Programs, &item.CreatedBy, &item.CreatedAt, &item.UpdatedAt)
 	if err != nil {
+		log.Printf("create question error: %v", err)
 		respond.Error(w, http.StatusInternalServerError, "could not create question")
 		return
 	}
-	item.Star = 0
+	item.Settings = ComputeSettings(weights, map[string]int{})
 	respond.JSON(w, http.StatusCreated, item)
 }
 
@@ -220,11 +348,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 
 	var item Question
 	err = h.pool.QueryRow(r.Context(), `
-		select q.id, q.text, q.variants, q.category, q.specialty, q.program,
-		       q.institutional_setting, q.frequency, q.year, s.star, q.programs,
-		       q.created_by, q.created_at, q.updated_at,
-		       (select count(*) from comments c where c.question_id = q.id and c.parent_id is null) as comment_count,
-		       (select count(*) from encounters e where e.question_id = q.id and e.encountered) as encounter_count
+		select `+SelectCols+`
 		from questions q
 		cross join lateral (
 		  select `+starExpr+`
@@ -234,15 +358,19 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	).Scan(&item.ID, &item.Text, &item.Variants, &item.Category, &item.Specialty,
 		&item.Program, &item.InstitutionalSetting, &item.Frequency, &item.Year,
 		&item.Star, &item.Programs, &item.CreatedBy, &item.CreatedAt, &item.UpdatedAt,
+		&item.SettingCommunityBased, &item.SettingUniversityBased, &item.SettingMilitaryBased,
+		&item.SettingCBUA, &item.SettingOther, &item.EncounterSettings,
 		&item.CommentCount, &item.EncounterCount)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			respond.Error(w, http.StatusNotFound, "question not found")
 			return
 		}
+		log.Printf("get question scan error: %v", err)
 		respond.Error(w, http.StatusInternalServerError, "could not load question")
 		return
 	}
+	item.Settings = ComputeSettings(Weights(item), item.EncounterSettings)
 
 	list := []Question{item}
 	if u := auth.UserFrom(r); u != nil {
@@ -310,28 +438,29 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var item Question
-	err = h.pool.QueryRow(r.Context(), `
+	tag, err := h.pool.Exec(r.Context(), `
 		update questions set
 		  text = coalesce(nullif($1, ''), text),
 		  variants = $2,
 		  category = coalesce(nullif($3, ''), category),
-		  specialty = $4, program = $5, institutional_setting = $6,
+		  specialty = $4, program = $5, institutional_setting = coalesce($6, institutional_setting),
 		  frequency = $7, year = $8,
 		  updated_at = now()
-		where id = $9
-		returning id, text, variants, category, specialty, program, institutional_setting, frequency, year, programs, created_by, created_at, updated_at`,
+		where id = $9`,
 		in.Text, in.Variants, in.Category, in.Specialty, in.Program, in.InstitutionalSetting,
-		in.Frequency, in.Year, id,
-	).Scan(&item.ID, &item.Text, &item.Variants, &item.Category, &item.Specialty,
-		&item.Program, &item.InstitutionalSetting, &item.Frequency, &item.Year,
-		&item.Programs, &item.CreatedBy, &item.CreatedAt, &item.UpdatedAt)
+		in.Frequency, in.Year, id)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			respond.Error(w, http.StatusNotFound, "question not found")
-			return
-		}
 		respond.Error(w, http.StatusInternalServerError, "could not update question")
+		return
+	}
+	if tag.RowsAffected() == 0 {
+		respond.Error(w, http.StatusNotFound, "question not found")
+		return
+	}
+
+	item, err := h.fetchQuestion(r.Context(), id)
+	if err != nil {
+		respond.Error(w, http.StatusInternalServerError, "could not load question")
 		return
 	}
 	list := []Question{item}
@@ -546,11 +675,7 @@ func (h *Handler) DeleteVariant(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) fetchQuestion(ctx context.Context, id uuid.UUID) (Question, error) {
 	var item Question
 	err := h.pool.QueryRow(ctx, `
-		select q.id, q.text, q.variants, q.category, q.specialty, q.program,
-		       q.institutional_setting, q.frequency, q.year, s.star, q.programs,
-		       q.created_by, q.created_at, q.updated_at,
-		       (select count(*) from comments c where c.question_id = q.id and c.parent_id is null) as comment_count,
-		       (select count(*) from encounters e where e.question_id = q.id and e.encountered) as encounter_count
+		select `+SelectCols+`
 		from questions q
 		cross join lateral (
 		  select `+starExpr+`
@@ -560,6 +685,11 @@ func (h *Handler) fetchQuestion(ctx context.Context, id uuid.UUID) (Question, er
 	).Scan(&item.ID, &item.Text, &item.Variants, &item.Category, &item.Specialty,
 		&item.Program, &item.InstitutionalSetting, &item.Frequency, &item.Year,
 		&item.Star, &item.Programs, &item.CreatedBy, &item.CreatedAt, &item.UpdatedAt,
+		&item.SettingCommunityBased, &item.SettingUniversityBased, &item.SettingMilitaryBased,
+		&item.SettingCBUA, &item.SettingOther, &item.EncounterSettings,
 		&item.CommentCount, &item.EncounterCount)
+	if err == nil {
+		item.Settings = ComputeSettings(Weights(item), item.EncounterSettings)
+	}
 	return item, err
 }

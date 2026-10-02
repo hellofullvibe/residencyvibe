@@ -24,8 +24,9 @@ func (h *Handler) RecordEncounter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var in struct {
-		Encountered bool   `json:"encountered"`
-		ProgramName string `json:"program_name"`
+		Encountered bool       `json:"encountered"`
+		ProgramID   *uuid.UUID `json:"program_id"`
+		ProgramName string     `json:"program_name"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
 		respond.Error(w, http.StatusBadRequest, "invalid request body")
@@ -33,12 +34,24 @@ func (h *Handler) RecordEncounter(w http.ResponseWriter, r *http.Request) {
 	}
 	in.ProgramName = strings.TrimSpace(in.ProgramName)
 
+	// When a program is selected, resolve its name and setting from the mapping.
+	if in.ProgramID != nil {
+		var name string
+		err := h.pool.QueryRow(r.Context(),
+			`select name from programs where id = $1`, *in.ProgramID).Scan(&name)
+		if err != nil {
+			respond.Error(w, http.StatusBadRequest, "program not found")
+			return
+		}
+		in.ProgramName = name
+	}
+
 	_, err = h.pool.Exec(r.Context(), `
-		insert into encounters (question_id, user_id, encountered, program_name)
-		values ($1, $2, $3, $4)
+		insert into encounters (question_id, user_id, encountered, program_name, program_id)
+		values ($1, $2, $3, $4, $5)
 		on conflict (question_id, user_id)
-		do update set encountered = excluded.encountered, program_name = excluded.program_name`,
-		questionID, u.ID, in.Encountered, nullIfEmpty(in.ProgramName))
+		do update set encountered = excluded.encountered, program_name = excluded.program_name, program_id = excluded.program_id`,
+		questionID, u.ID, in.Encountered, nullIfEmpty(in.ProgramName), in.ProgramID)
 	if err != nil {
 		respond.Error(w, http.StatusInternalServerError, "could not record encounter")
 		return
@@ -116,17 +129,13 @@ func (h *Handler) Saved(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	rows, err := h.pool.Query(r.Context(), `
-		select q.id, q.text, q.variants, q.category, q.specialty, q.program,
-		       q.institutional_setting, q.frequency, q.year, rt.star, q.programs,
-		       q.created_by, q.created_at, q.updated_at,
-		       (select count(*) from comments c where c.question_id = q.id and c.parent_id is null) as comment_count,
-		       (select count(*) from encounters e where e.question_id = q.id and e.encountered) as encounter_count
+		select `+SelectCols+`
 		from saved_questions sv
 		join questions q on q.id = sv.question_id
 		cross join lateral (
 		  select coalesce(round(avg(r.star)::numeric, 1), 0) as star
 		  from ratings r where r.question_id = q.id
-		) rt
+		) s
 		where sv.user_id = $1
 		order by sv.created_at desc`, u.ID)
 	if err != nil {
@@ -142,11 +151,14 @@ func (h *Handler) Saved(w http.ResponseWriter, r *http.Request) {
 			&item.ID, &item.Text, &item.Variants, &item.Category, &item.Specialty,
 			&item.Program, &item.InstitutionalSetting, &item.Frequency, &item.Year,
 			&item.Star, &item.Programs, &item.CreatedBy, &item.CreatedAt, &item.UpdatedAt,
+			&item.SettingCommunityBased, &item.SettingUniversityBased, &item.SettingMilitaryBased,
+			&item.SettingCBUA, &item.SettingOther, &item.EncounterSettings,
 			&item.CommentCount, &item.EncounterCount,
 		); err != nil {
 			respond.Error(w, http.StatusInternalServerError, "could not scan questions")
 			return
 		}
+		item.Settings = ComputeSettings(Weights(item), item.EncounterSettings)
 		item.Saved = true
 		items = append(items, item)
 	}
