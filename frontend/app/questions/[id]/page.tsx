@@ -272,7 +272,7 @@ export default function QuestionDetailPage() {
       {/* Variants card */}
       <div className="mt-1 border border-slate-100 bg-white px-6 py-8">
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold text-slate-900">Variants</h2>
+          <h2 className="text-base font-semibold text-slate-900">Question Variants</h2>
           <span className="text-sm font-medium text-slate-500">
             {q.variants.length} variant{q.variants.length !== 1 ? "s" : ""}
           </span>
