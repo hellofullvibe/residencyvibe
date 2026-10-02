@@ -502,7 +502,7 @@ function Select({
       <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-400">
         {label}
       </span>
-      <div className="relative w-full bg-white flex items-center  border border-slate-100">
+      <div className="relative w-full bg-white flex items-center">
         <select
           value={value}
           onChange={(e) => onChange(e.target.value)}

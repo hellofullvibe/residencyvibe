@@ -787,7 +787,7 @@ function Field({ label, children, arrowIcon = true }: { label: string; children:
       <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">
         {label}
       </span>
-      <div className="relative w-full bg-white flex items-center  border border-slate-100">
+      <div className="relative w-full bg-white flex items-center ">
         {children}
       {arrowIcon && <ArrowDown01Icon
           size={16}
