@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Bookmark02Icon, Cancel01Icon, Menu01Icon, Search01Icon } from "hugeicons-react";
 import { useAuth } from "@/lib/auth";
 
