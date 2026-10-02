@@ -20,4 +20,4 @@ backend/*.test
 .DS_Store
 
 # local csv seed copy
-backend/data/raw.csv
+backend/data/raw.csvbackend/bin/
