@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ResidencyPrep local dev launcher.
+# Residency Vibe local dev launcher.
 # Starts a local Postgres (Docker), the Go backend, and the Next.js frontend.
 #
 # Usage:

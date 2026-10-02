@@ -207,14 +207,14 @@ export default function QuestionDetailPage() {
         </div>
       </div>
 
-      {q.my_encounter && q.my_encounter.encountered && (
+      {/* {q.my_encounter && q.my_encounter.encountered && (
         <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">
           You encountered
           {q.my_encounter.program_name
             ? ` at ${q.my_encounter.program_name}`
             : ""}
         </span>
-      )}
+      )} */}
 
       {/* Recent encounters card */}
       <div className="mt-1 border border-slate-100 bg-white px-6 py-8">

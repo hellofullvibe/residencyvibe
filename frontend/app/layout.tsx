@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ResidencyPrep",
+  title: "Residency Vibe",
   description: "Residency interview question bank, shared answers and practice.",
 };
 

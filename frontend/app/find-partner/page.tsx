@@ -255,7 +255,7 @@ export default function FindPartnerPage() {
                 />
                 {[2, 19, 49, 74].includes(i) && (
                   <DonationCard
-                    description="ResidencyPrep is free for everyone. If it helped you prepare, consider a small donation to keep it running."
+                    description="Residency Vibe is free for everyone. If it helped you prepare, consider a small donation to keep it running."
                   />
                 )}
               </Fragment>
@@ -279,7 +279,7 @@ export default function FindPartnerPage() {
                 />
                 {[2, 19, 49, 74].includes(i) && (
                   <DonationCard
-                    description="ResidencyPrep is free for everyone. If it helped you prepare, consider a small donation to keep it running."
+                    description="Residency Vibe is free for everyone. If it helped you prepare, consider a small donation to keep it running."
                   />
                 )}
               </Fragment>

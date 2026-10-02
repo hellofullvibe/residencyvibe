@@ -57,7 +57,7 @@ export default function AccountPage() {
 
       <div className="mt-6">
         <DonationCard
-          description="ResidencyPrep is free for everyone. If it helped you prepare, consider a small donation to keep it running."
+          description="Residency Vibe is free for everyone. If it helped you prepare, consider a small donation to keep it running."
         />
       </div>
     

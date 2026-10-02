@@ -212,7 +212,7 @@ export default function QuestionsPage() {
           </div>
           <DonationCard
           verticle={true}
-            description="ResidencyPrep is free for everyone. If it helped you prepare, consider a small donation to keep it running."
+            description="Residency Vibe is free for everyone. If it helped you prepare, consider a small donation to keep it running."
           />
         </div>
 
@@ -364,7 +364,7 @@ export default function QuestionsPage() {
                     <div className="block lg:hidden sm:col-span-2">
                       <DonationCard
                         verticle={true}
-                        description="ResidencyPrep is free for everyone. If it helped you prepare, consider a small donation to keep it running."
+                        description="Residency Vibe is free for everyone. If it helped you prepare, consider a small donation to keep it running."
                       />
                     </div>
                   )}
@@ -384,7 +384,7 @@ export default function QuestionsPage() {
                     <div className="block lg:hidden py-4">
                       <DonationCard
                         verticle={true}
-                        description="ResidencyPrep is free for everyone. If it helped you prepare, consider a small donation to keep it running."
+                        description="Residency Vibe is free for everyone. If it helped you prepare, consider a small donation to keep it running."
                       />
                     </div>
                   )}
