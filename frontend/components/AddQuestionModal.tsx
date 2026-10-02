@@ -146,7 +146,7 @@ export default function AddQuestionModal({
               ))}
             </select>
           </Field>
-          <Field label="Program (optional, can pick multiple)">
+          <Field label="Program " arrowIcon= {false}>
             <ProgramPicker
               multi
               value={programOptions}

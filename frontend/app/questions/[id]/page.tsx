@@ -179,9 +179,8 @@ export default function QuestionDetailPage() {
                 .join(", ")}
             </span>
           )}
-          {/* {q.frequency && <span>Frequency: {q.frequency}</span>} */}
+
           {q.year && <span>Year: {q.year}</span>}
-          {/* {q.encounter_count > 0 && <span>{q.encounter_count} encountered</span>} */}
         </div>
         <div className="mt-1 flex flex-wrap gap-y-2 gap-x-4 gap-y-2 text-sm text-slate-400">
           {q.program && <span>List of Programs: {q.program}</span>}
@@ -236,7 +235,7 @@ export default function QuestionDetailPage() {
         </div>
       </div>
 
-      {q.my_encounters && q.my_encounters.length > 0 && (
+      {/* {q.my_encounters && q.my_encounters.length > 0 && (
         <div className="mt-1 border border-slate-100 bg-white px-6 py-4">
           <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
             You encountered this at
@@ -252,13 +251,13 @@ export default function QuestionDetailPage() {
             ))}
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Recent encounters card */}
       <div className="mt-1 border border-slate-100 bg-white px-6 py-8">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-900">
-            Recent encounters
+            Recent Encounters
           </h2>
             <span className="text-sm font-medium text-slate-500">
               Year {new Date().getFullYear()}
@@ -300,21 +299,21 @@ export default function QuestionDetailPage() {
         ) : (
           <div className="mt-4 flex flex-wrap gap-2">
             {q.variants.map((v, i) => (
-              <span
+              <div
                 key={i}
-                className="flex items-center justify-center gap-2 rounded-full bg-slate-50 px-4 font-medium text-sm text-slate-700"
+                className="rounded-full bg-slate-50 px-4 h-11 flex items-center justify-center font-medium text-sm text-slate-700 gap-2"
               >
                 {v}
                 {user && (
                   <button
                     onClick={() => deleteVariant(i)}
-                    className="cursor-pointer text-slate-400 transition-colors hover:text-red-600"
+                    className="cursor-pointer text-slate-400 transition-colors hover:text-rose-600"
                     aria-label="Delete variant"
                   >
                     <Cancel01Icon size={14} strokeWidth={2} />
                   </button>
                 )}
-              </span>
+              </div>
             ))}
           </div>
         )}
@@ -326,12 +325,12 @@ export default function QuestionDetailPage() {
               onChange={(e) => setNewVariant(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && addVariant()}
               placeholder="Add a variant…"
-              className="h-11 flex-1 rounded-full border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-blue-500"
+              className="h-11 flex-1 border border-slate-200  px-4 text-sm outline-none focus:border-slate-700"
             />
             <button
               onClick={addVariant}
               disabled={!newVariant.trim()}
-              className="h-11 cursor-pointer rounded-full bg-blue-700 px-5 text-sm font-semibold text-white transition-colors hover:bg-blue-800 disabled:opacity-50"
+              className="h-11 cursor-pointer bg-blue-700 px-5 text-sm font-semibold text-white transition-colors hover:bg-blue-800 disabled:opacity-50"
             >
               Add
             </button>
@@ -426,7 +425,7 @@ function EncounterForm({
       <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
         I encountered this question at
       </span>
-      <div className="relative mt-2">
+      <div className="relative mt-2 flex flex-col md:flex-row items-start justify-between gap-2">
         <ProgramPicker
           multi
           value={selected}
@@ -435,7 +434,7 @@ function EncounterForm({
         <button
           onClick={save}
           disabled={saving}
-          className="mt-3 w-full sm:w-auto bg-blue-700/10 cursor-pointer h-14 px-4 text-sm font-semibold text-blue-700 hover:text-white transition-all ease-in-out duration-300 hover:bg-blue-700 disabled:pointer-events-none disabled:opacity-60"
+          className="w-full sm:w-auto bg-blue-700/10 cursor-pointer h-11 px-4 text-sm font-semibold text-blue-700 hover:text-white transition-all ease-in-out duration-300 hover:bg-blue-700 disabled:pointer-events-none disabled:opacity-60"
         >
           {saving ? "Saving…" : "Save"}
         </button>

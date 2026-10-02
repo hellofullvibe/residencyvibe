@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { api, ApiError } from "@/lib/api";
 import type { Program } from "@/lib/types";
-import { Cancel01Icon } from "hugeicons-react";
+import { ArrowDown01Icon, Cancel01Icon } from "hugeicons-react";
 
 export type ProgramOption = { id?: string; name: string };
 
@@ -95,7 +95,7 @@ export default function ProgramPicker({
         onFocus={() => setOpen(true)}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
         placeholder={placeholder}
-        className="w-full border border-slate-100 px-4 h-14 text-sm outline-none focus:border-blue-700"
+        className="w-full border border-slate-100 px-4 h-11 text-sm outline-none focus:border-blue-700"
       />
 
       {open && query.trim() && (
@@ -142,7 +142,7 @@ export default function ProgramPicker({
                 setOpen(false);
                 setShowAdd(true);
               }}
-              className="w-full px-4 py-2 text-left text-sm font-medium text-blue-700 hover:bg-blue-50"
+              className="w-full px-4 py-4 cursor-pointer text-left text-sm font-medium text-blue-700 hover:bg-blue-50"
             >
               + Can&apos;t find it? Add a program
             </button>
@@ -150,7 +150,7 @@ export default function ProgramPicker({
         </ul>
       )}
 
-      {list.length > 0 && (
+      {/* {list.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-2">
           {list.map((s) => (
             <span
@@ -169,7 +169,7 @@ export default function ProgramPicker({
             </span>
           ))}
         </div>
-      )}
+      )} */}
 
       {showAdd && (
         <AddProgramForm settings={settings} onAdded={addProgram} />
@@ -217,26 +217,40 @@ export function AddProgramForm({
       </span>
       <div className="mt-2 flex flex-col gap-2">
         <input
+        type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Program full name *"
-          className="min-w-[200px] flex-1 border border-slate-100 bg-white px-3 py-2 text-sm outline-none focus:border-blue-700"
+          placeholder="Program full name"
+          className="appearance-none w-full border border-slate-100 bg-white px-4 h-11 text-sm outline-none focus:border-slate-700"
         />
          {!name.trim() && (
         <p className="mt-1 text-xs text-red-600">Program full name is required.</p>
       )}
-        <select
-          value={setting}
-          onChange={(e) => setSetting(e.target.value)}
-          className="border border-slate-100 bg-white px-3 py-2 text-sm outline-none focus:border-blue-700"
-        >
-          <option value="">Setting *</option>
-          {settings.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </select>
+      <div className="relative w-full bg-white flex items-center ">
+
+
+          <select
+            value={setting}
+            onChange={(e) => setSetting(e.target.value)}
+            className="appearance-none w-full border border-slate-100 bg-white px-4 h-11 text-sm outline-none focus:border-slate-700 pr-10"
+          >
+            <option value="text-slate-700">Select Setting</option>
+            {settings.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+          <ArrowDown01Icon
+            size={16}
+            strokeWidth={2}
+            className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-500"
+          />
+      </div>
+      {!setting && (
+        <p className="mt-1 text-xs text-red-600">Institutional setting is required.</p>
+      )}
+        
         <button
           onClick={submit}
           disabled={saving || missing}
@@ -245,10 +259,7 @@ export function AddProgramForm({
           {saving ? "Adding…" : "Add"}
         </button>
       </div>
-     
-      {!setting && (
-        <p className="mt-1 text-xs text-red-600">Institutional setting is required.</p>
-      )}
+    
       {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
     </div>
   );
