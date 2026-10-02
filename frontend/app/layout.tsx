@@ -3,9 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth";
 import Nav from "@/components/Nav";
+import FooterLinks from "@/components/FooterLinks";
 import Link from "next/link";
-import { useAuth } from "@/lib/auth";
-import { usePathname } from "next/navigation";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -22,23 +21,9 @@ export const metadata: Metadata = {
   description: "Residency interview question bank, shared answers and practice.",
 };
 
-const links = [
-  { href: "/", label: "Home" },
-  { href: "/questions", label: "Question Bank" },
-  { href: "/find-partner", label: "Find Partner" },
-  { href: "/search", label: "Search" },
-  { href: "/saved", label: "Saved" },
-];
-
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const { user, loading, logout } = useAuth();
-  const pathname = usePathname();
-  const visibleLinks = user
-    ? links
-    : links.filter((l) => l.href !== "/search" && l.href !== "/saved");
-
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body className="min-h-screen flex flex-col antialiased">
@@ -59,20 +44,7 @@ export default function RootLayout({
         </Link>
             <p className="w-full max-w-xl mx-auto text-center mt-4">Residency Vibe is an interview preparation platform built for residency applicants. Practice with question bank, learn from others’ responses, save questions, and find a practice partner to prepare with confidence.</p>
 
-            {visibleLinks.map((l) => (
-            <Link
-              key={l.href}
-              href={l.href}
-              className={`flex items-center font-medium h-full justify-center border-b-2 px-4 h-full transition-all ease-in-out duration-300 ${
-                pathname === l.href
-                  ? "text-blue-700 border-blue-700"
-                  : "text-slate-700 hover:bg-gray-50 border-transparent"
-              }`}
-            >
-              {l.label}
-            </Link>
-          ))}
-
+            <FooterLinks />
           </footer>
         </AuthProvider>
       </body>
