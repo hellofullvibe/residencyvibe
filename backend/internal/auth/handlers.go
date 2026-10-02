@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"strings"
 
@@ -77,6 +78,7 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 			respond.Error(w, http.StatusConflict, msg)
 			return
 		}
+		log.Printf("signup error: %v", err)
 		respond.Error(w, http.StatusInternalServerError, "could not create account")
 		return
 	}
