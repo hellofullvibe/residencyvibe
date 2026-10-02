@@ -4,9 +4,11 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
-import type { Comment, Program, QuestionDetail, User } from "@/lib/types";
+import type { Comment, QuestionDetail, User } from "@/lib/types";
 import { useAuth } from "@/lib/auth";
 import CategoryBadge from "@/components/CategoryBadge";
+import ProgramPicker from "@/components/ProgramPicker";
+import type { ProgramOption } from "@/components/ProgramPicker";
 import { StarRating, StarValue } from "@/components/StarRating";
 import { ArrowLeft02Icon, Bookmark02Icon, Cancel01Icon, TickDouble01Icon } from "hugeicons-react";
 
@@ -396,40 +398,11 @@ function EncounterForm({
   onUpdated: () => Promise<void>;
 }) {
   const q = data.question;
-  const [query, setQuery] = useState("");
-  const [selected, setSelected] = useState<{ id?: string; name: string }[]>(
+  const [selected, setSelected] = useState<ProgramOption[]>(
     (q.my_encounters ?? []).map((n) => ({ name: n }))
   );
-  const [results, setResults] = useState<Program[]>([]);
-  const [open, setOpen] = useState(false);
-  const [showAdd, setShowAdd] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-
-  async function search(s: string) {
-    setQuery(s);
-    setOpen(true);
-    if (!s.trim()) {
-      setResults([]);
-      return;
-    }
-    try {
-      const data = await api.get<Program[]>(
-        `/api/programs?q=${encodeURIComponent(s)}`
-      );
-      setResults(data);
-    } catch {
-      setResults([]);
-    }
-  }
-
-  function toggleProgram(p: Program) {
-    setSelected((prev) => {
-      const exists = prev.some((x) => x.name === p.name);
-      if (exists) return prev.filter((x) => x.name !== p.name);
-      return [...prev, { id: p.id, name: p.name }];
-    });
-  }
 
   async function save() {
     setSaving(true);
@@ -448,180 +421,23 @@ function EncounterForm({
     }
   }
 
-  const selectedNames = selected.map((s) => s.name);
-
   return (
     <div className="mt-6">
       <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
         I encountered this question at
       </span>
       <div className="relative mt-2">
-        <div className="relative">
-          <input
-            value={query}
-            onChange={(e) => search(e.target.value)}
-            onFocus={() => setOpen(true)}
-            onBlur={() => setTimeout(() => setOpen(false), 150)}
-            placeholder="Search programs…"
-            className="w-full border border-slate-100 px-4 h-14 text-sm outline-none focus:border-blue-700"
-          />
-          {open && query.trim() && (
-            <ul className="absolute z-30 mt-1 max-h-60 w-full overflow-auto border border-slate-100 bg-white shadow-lg">
-              {results.length === 0 ? (
-                <li className="px-4 py-2 text-sm text-slate-400">No matches</li>
-              ) : (
-                results.map((p) => {
-                  const checked = selectedNames.includes(p.name);
-                  return (
-                    <li key={p.id}>
-                      <label className="flex items-center gap-3 px-4 py-2 hover:bg-slate-50 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() => toggleProgram(p)}
-                          className="accent-blue-700"
-                        />
-                        <span className="flex flex-col">
-                          <span className="text-sm text-slate-800">{p.name}</span>
-                          <span className="text-xs text-slate-400">
-                            {p.institutional_setting}
-                          </span>
-                        </span>
-                      </label>
-                    </li>
-                  );
-                })
-              )}
-              <li className="border-t border-slate-100">
-                <button
-                  type="button"
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    setOpen(false);
-                    setShowAdd(true);
-                  }}
-                  className="w-full px-4 py-2 text-left text-sm font-medium text-blue-700 hover:bg-blue-50"
-                >
-                  + Can&apos;t find it? Add a program
-                </button>
-              </li>
-            </ul>
-          )}
-        </div>
-
-        {selected.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-2">
-            {selected.map((s) => (
-              <span
-                key={s.name}
-                className="flex items-center gap-1 rounded-full bg-slate-50 px-3 py-1 text-xs text-slate-700"
-              >
-                {s.name}
-                <button
-                  onClick={() =>
-                    setSelected((prev) => prev.filter((x) => x.name !== s.name))
-                  }
-                  className="text-slate-400 hover:text-red-600"
-                  aria-label={`Remove ${s.name}`}
-                >
-                  <Cancel01Icon size={13} strokeWidth={2} />
-                </button>
-              </span>
-            ))}
-          </div>
-        )}
-
+        <ProgramPicker
+          multi
+          value={selected}
+          onChange={(v) => setSelected((v as ProgramOption[]) ?? [])}
+        />
         <button
           onClick={save}
           disabled={saving}
           className="mt-3 w-full sm:w-auto bg-blue-700/10 cursor-pointer h-14 px-4 text-sm font-semibold text-blue-700 hover:text-white transition-all ease-in-out duration-300 hover:bg-blue-700 disabled:pointer-events-none disabled:opacity-60"
         >
           {saving ? "Saving…" : "Save"}
-        </button>
-      </div>
-
-      {showAdd && (
-        <AddProgramForm
-          onAdded={(p) => {
-            setSelected((prev) =>
-              prev.some((x) => x.name === p.name)
-                ? prev
-                : [...prev, { id: p.id, name: p.name }]
-            );
-            setShowAdd(false);
-          }}
-        />
-      )}
-
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
-    </div>
-  );
-}
-
-function AddProgramForm({
-  onAdded,
-}: {
-  onAdded: (p: Program) => void;
-}) {
-  const [name, setName] = useState("");
-  const [setting, setSetting] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-  const settings = [
-    "Community Based",
-    "University Based",
-    "Military Based",
-    "Community Based University Affiliated",
-    "Other",
-  ];
-
-  async function submit() {
-    if (!name.trim() || !setting) return;
-    setSaving(true);
-    setError("");
-    try {
-      const p = await api.post<Program>("/api/programs", {
-        name: name.trim(),
-        institutional_setting: setting,
-      });
-      onAdded(p);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Could not add program");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return (
-    <div className="mt-3 border border-blue-100 bg-blue-50/50 p-4">
-      <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
-        Add a program
-      </span>
-      <div className="mt-2 flex flex-wrap gap-2">
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Program full name"
-          className="min-w-[200px] flex-1 border border-slate-100 bg-white px-3 py-2 text-sm outline-none focus:border-blue-700"
-        />
-        <select
-          value={setting}
-          onChange={(e) => setSetting(e.target.value)}
-          className="border border-slate-100 bg-white px-3 py-2 text-sm outline-none focus:border-blue-700"
-        >
-          <option value="">Setting…</option>
-          {settings.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </select>
-        <button
-          onClick={submit}
-          disabled={saving || !name.trim() || !setting}
-          className="bg-blue-700 cursor-pointer px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800 disabled:opacity-50"
-        >
-          {saving ? "Adding…" : "Add"}
         </button>
       </div>
       {error && <p className="mt-2 text-sm text-red-600">{error}</p>}

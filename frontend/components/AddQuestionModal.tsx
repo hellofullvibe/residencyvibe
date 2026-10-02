@@ -4,6 +4,8 @@ import { useState } from "react";
 import { api, ApiError } from "@/lib/api";
 import type { Meta, Question } from "@/lib/types";
 import { useAuth } from "@/lib/auth";
+import ProgramPicker from "@/components/ProgramPicker";
+import type { ProgramOption } from "@/components/ProgramPicker";
 import { ArrowDown01Icon, Cancel01Icon } from "hugeicons-react";
 
 export default function AddQuestionModal({
@@ -28,6 +30,7 @@ export default function AddQuestionModal({
     directSetting: "",
     percentage: {} as Record<string, string>,
   });
+  const [programOption, setProgramOption] = useState<ProgramOption | null>(null);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -67,7 +70,7 @@ export default function AddQuestionModal({
       category: form.category,
     };
     if (form.specialty) body.specialty = form.specialty;
-    if (form.program) body.program = form.program;
+    if (programOption?.name) body.program = programOption.name;
     if (form.frequency) body.frequency = form.frequency;
     if (form.year) body.year = Number(form.year);
     if (form.settingsType === "direct") {
@@ -144,12 +147,10 @@ export default function AddQuestionModal({
               ))}
             </select>
           </Field>
-          <Field label="Program" arrowIcon = {false}>
-            <input
-              value={form.program}
-              onChange={(e) => set("program", e.target.value)}
-              placeholder="Write full program name"
-              className={inputCls}
+          <Field label="Program">
+            <ProgramPicker
+              value={programOption}
+              onChange={(v) => setProgramOption((v as ProgramOption) ?? null)}
             />
           </Field>
           <Field label="Settings">
