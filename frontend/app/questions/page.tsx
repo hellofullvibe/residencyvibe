@@ -542,11 +542,11 @@ function Select({
       <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-400">
         {label}
       </span>
-      <div className="relative w-full bg-white flex items-center">
+      <div className="relative w-full bg-white flex items-center ">
         <select
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="appearance-none w-full font-medium h-11 pl-4 pr-8 text-sm text-slate-700 outline-none focus:border-slate-400 cursor-pointer"
+          className="appearance-none w-full font-medium h-11 pl-4 pr-8 text-sm text-slate-700 border border-slate-100 outline-none focus:border-slate-400 cursor-pointer"
         >
           <option value="">All</option>
           {options.map((o) => (

@@ -211,17 +211,20 @@ export function AddProgramForm({
   }
 
   return (
-    <div className="mt-3 border border-blue-100 bg-blue-50/50 p-4">
+    <div className="mt-2 bg-blue-700/5 p-4">
       <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
         Add a program
       </span>
-      <div className="mt-2 flex flex-wrap gap-2">
+      <div className="mt-2 flex flex-col gap-2">
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Program full name *"
           className="min-w-[200px] flex-1 border border-slate-100 bg-white px-3 py-2 text-sm outline-none focus:border-blue-700"
         />
+         {!name.trim() && (
+        <p className="mt-1 text-xs text-red-600">Program full name is required.</p>
+      )}
         <select
           value={setting}
           onChange={(e) => setSetting(e.target.value)}
@@ -242,9 +245,7 @@ export function AddProgramForm({
           {saving ? "Adding…" : "Add"}
         </button>
       </div>
-      {!name.trim() && (
-        <p className="mt-1 text-xs text-red-600">Program full name is required.</p>
-      )}
+     
       {!setting && (
         <p className="mt-1 text-xs text-red-600">Institutional setting is required.</p>
       )}

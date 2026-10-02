@@ -153,24 +153,28 @@ export default function AddQuestionModal({
               onChange={(v) => setProgramOptions((v as ProgramOption[]) ?? [])}
             />
           </Field>
-          <Field label="Settings">
-            <div className="flex gap-1">
+          <Field label="Settings" arrowIcon={false}>            
+            <div className="flex w-full">
               {(["direct", "percentage"] as const).map((t) => (
                 <button
                   key={t}
                   type="button"
                   onClick={() => set("settingsType", t)}
-                  className={`flex-1 rounded-md border px-3 py-2 text-xs font-medium transition-colors ${
+                  className={`flex-1 px-4 h-11 text-sm font-medium transition-colors duration-300 ease-in-out cursor-pointer ${
                     form.settingsType === t
-                      ? "border-blue-700 bg-blue-700 text-white"
-                      : "border-slate-300 bg-white text-slate-600 hover:bg-slate-50"
+                      ? "bg-blue-700/10 text-blue-700"
+                      : "bg-white text-slate-600 hover:bg-slate-50"
                   }`}
                 >
                   {t === "direct" ? "Direct" : "Percentage"}
                 </button>
               ))}
             </div>
+          </Field>
             {form.settingsType === "direct" ? (
+              <Field label="">
+
+              
               <select
                 value={form.directSetting}
                 onChange={(e) => set("directSetting", e.target.value)}
@@ -183,8 +187,10 @@ export default function AddQuestionModal({
                   </option>
                 ))}
               </select>
+              </Field>
             ) : (
-              <div className="space-y-1">
+<Field label="" arrowIcon={false}>
+              <div className="space-y-2 w-full p-4 font-medium">
                 {(meta?.institutional_settings || []).map((s) => (
                   <div key={s} className="flex items-center gap-2">
                     <span className="flex-1 text-xs text-slate-600">{s}</span>
@@ -206,8 +212,10 @@ export default function AddQuestionModal({
                   </div>
                 ))}
               </div>
-            )}
-          </Field>
+              </Field>
+            )
+            }
+
           <Field label="Frequency">
             <select
               value={form.frequency}
