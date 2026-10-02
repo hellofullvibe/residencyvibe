@@ -84,7 +84,7 @@ export default function AccountPage() {
         </p>
 
         {error && (
-          <p className="mb-4 text-center bg-red-50 px-4 inline-block py-4 text-sm text-rose-600">We are facing some issue loading questions.</p>
+          <p className="mb-4 text-center bg-red-50 px-4 inline-block py-4 text-sm text-red-600">We are facing some issue loading questions.</p>
         )}
 
         {!confirming ? (

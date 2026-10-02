@@ -39,13 +39,16 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="mx-auto flex max-w-md flex-col px-4 py-16">
-      <h1 className="text-2xl font-bold text-slate-900">Create your account</h1>
-      <p className="mt-1 text-sm text-slate-600">
-        Join the residency interview question bank.
-      </p>
+    <div className="mx-auto flex w-full bg-white flex-col px-12 sm:px-6 py-16 min-h-screen">
+<h1 className="mx-auto max-w-2xl text-4xl font-bold tracking-tight text-black sm:text-5xl">
+Join Community
+              </h1>
 
-      <form onSubmit={onSubmit} className="mt-8 space-y-4">
+              <p className="mx-auto mt-2 max-w-2xl w-full text-center text-slate-600">
+Join the residency vibe community and improve your interview preparation.
+            </p>
+
+      <form onSubmit={onSubmit} className="mt-8 space-y-4 w-full max-w-md mx-auto">
         <Field label="Full name">
           <input
             required
@@ -97,15 +100,15 @@ export default function SignupPage() {
         </Field>
 
         {error && (
-          <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+          <p className="mb-4 text-center bg-red-50 px-4 inline-block py-4 text-sm text-red-700">We are facing some issue loading questions.</p>
         )}
 
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded-lg bg-slate-900 py-2.5 font-medium text-white hover:bg-slate-800 disabled:opacity-60"
+          className="bg-blue-700 w-full cursor-pointer sm:px-8 h-14 flex items-center justify-center font-semibold text-white hover:bg-blue-800 transition-all ease-in-out duration-300 disabled:opacity-60"
         >
-          {submitting ? "Creating account…" : "Sign up"}
+          {submitting ? "Joining…" : "Join Now"}
         </button>
       </form>
 
@@ -120,7 +123,7 @@ export default function SignupPage() {
 }
 
 const inputCls =
-  "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200";
+  "appearance-none w-full border border-slate-100 bg-white px-4 py-4 text-sm outline-none focus:border-slate-500";
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
