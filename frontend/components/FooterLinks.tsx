@@ -21,16 +21,12 @@ export default function FooterLinks() {
     : links.filter((l) => l.href !== "/search" && l.href !== "/saved");
 
   return (
-    <nav className="flex flex-wrap items-center justify-center gap-2">
+    <nav className="flex flex-wrap items-center justify-center gap-2 h-11 mt-4">
       {visibleLinks.map((l) => (
         <Link
           key={l.href}
           href={l.href}
-          className={`flex items-center font-medium h-full justify-center border-b-2 px-4 h-full transition-all ease-in-out duration-300 ${
-            pathname === l.href
-              ? "text-blue-700 border-blue-700"
-              : "text-slate-700 hover:bg-gray-50 border-transparent"
-          }`}
+          className={`flex items-center font-medium justify-center px-4 transition-all ease-in-out duration-300 hover:underline hover:text-blue-700`}
         >
           {l.label}
         </Link>

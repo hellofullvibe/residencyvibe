@@ -36,13 +36,13 @@ export default function FaqAccordion({
     const f = items[i];
     const isOpen = open.has(i);
     return (
-      <div key={f.title} className="flex flex-col bg-gray-100">
+      <div key={f.title} className="flex flex-col bg-gray-50 ">
         <button
           onClick={() => toggle(i)}
-          className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left transition-colors hover:bg-gray-200"
+          className={`flex w-full items-center justify-between gap-4 px-6 py-5 text-left transition-colors hover:bg-gray-100 cursor-pointer border-b ${isOpen ? "border-slate-100" : " border-transparent"}`}
           aria-expanded={isOpen}
         >
-          <h3 className="text-lg font-semibold text-slate-900">{f.title}</h3>
+          <h3 className={`font-medium text-slate-700`}>{f.title}</h3>
           <span
             className={`shrink-0 text-2xl leading-none text-slate-600 transition-transform duration-300 ${
               isOpen ? "rotate-180" : ""
@@ -57,7 +57,7 @@ export default function FaqAccordion({
           }`}
         >
           <div className="overflow-hidden">
-            <p className="px-6 pb-5 leading-relaxed text-slate-600">{f.body}</p>
+            <p className="px-6 py-6 leading-relaxed text-slate-600">{f.body}</p>
           </div>
         </div>
       </div>

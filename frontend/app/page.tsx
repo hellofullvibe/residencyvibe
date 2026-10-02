@@ -85,18 +85,54 @@ export default function Home() {
         <div className="mx-auto w-full max-w-6xl px-6 sm:px-0">
           <FaqAccordion
             items={[
-              {
-                title: "What is residency vibe",
-                body: "It is something about the program. Like you are from a community and you want to share your experience with others. Where you can share your questions and answers and learn from each other.",
-              },
-              {
-                title: "Why do we need this",
-                body: "We all know the interview question bank is scattered. We want to create a community where we can share our questions and answers and learn from each other.",
-              },
-              {
-                title: "How do i contribute?",
-                body: "You can contribute by sharing your questions and answers and learn from each other.",
-              },
+             {
+  title: "What is Residency Vibe?",
+  body: "Residency Vibe is a community-driven platform for residency interview preparation. You can explore interview questions, share your responses, learn from other applicants, save questions, and find a practice partner.",
+},
+{
+  title: "Why do we need this?",
+  body: "Residency interview questions are often scattered across different places. We want to bring them together in one community where applicants can share questions, responses, experiences, and learn from each other.",
+},
+{
+  title: "Where do the questions come from?",
+  body: "We collect previously asked interview questions shared by applicants and the medical community, then organize them by program and topic to make them easier to find and practice. We’re grateful to everyone who has shared their interview experiences with the community.",
+},
+{
+  title: "How do I contribute?",
+  body: "You can contribute by adding interview questions, sharing your responses, and replying to other applicants. You’ll find options to contribute directly in the Questions Bank.",
+},
+{
+  title: "How do I find a practice partner?",
+  body: "Go to the Find a Partner page and create a practice session by filling out the requested details. You can also browse existing sessions and reach out to the person who created a session you’re interested in.",
+},
+{
+  title: "Is Finding a Partner free?",
+  body: "Yes. Finding a Partner is completely free. Residency Vibe simply provides a place for applicants to connect. Participants are responsible for contacting each other and coordinating their own practice sessions.",
+},
+{
+  title: "Do you share my information?",
+  body: "We respect your privacy and do not sell your personal information. Information is used only as needed to operate and maintain Residency Vibe and the features you choose to use.",
+},
+{
+  title: "How should I protect other users' privacy?",
+  body: "Residency Vibe is a community-run platform, and we expect everyone to respect each other's privacy. Please do not share another user's personal information, conversations, or responses outside the platform without their permission.",
+},
+{
+  title: "Are you responsible for interactions between users?",
+  body: "Residency Vibe provides the platform to help applicants connect, but we do not supervise conversations or practice sessions. Users are responsible for their own communication and interactions with other participants.",
+},
+{
+  title: "What does your support help with?",
+  body: "Residency Vibe is supported by the community. Contributions help us maintain the website, hosting, infrastructure, and existing features, while also allowing us to build new tools for residency interview preparation.",
+},
+{
+  title: "Can I use Residency Vibe without finding a partner?",
+  body: "Absolutely. You can use the Questions Bank, search questions and responses, save questions for later, share your own responses, and participate in discussions without joining a practice session.",
+},
+{
+  title: "How can I report inappropriate content or behavior?",
+  body: "If you come across inappropriate content, harassment, privacy violations, or other concerns, please contact us at contact@fullvice.com with the relevant details so we can review the issue.",
+}
             ]}
           />
         </div>
