@@ -56,7 +56,7 @@ export default function Nav() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-slate-100 bg-white/90 backdrop-blur">
-      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
+      <div className="relative mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-2 font-semibold">
           <img
             src="/logo.png"
@@ -69,7 +69,7 @@ export default function Nav() {
           </div>
         </Link>
 
-        <nav className="hidden items-center text-sm sm:flex items-center justify-center h-full">
+        <nav className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center justify-center text-sm sm:flex">
           {visibleLinks.map((l) => (
             <Link
               key={l.href}
