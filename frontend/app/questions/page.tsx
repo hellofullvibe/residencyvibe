@@ -1,6 +1,13 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Fragment,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
 import type { Meta, Question } from "@/lib/types";
@@ -78,6 +85,7 @@ export default function QuestionsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [hasNew, setHasNew] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const freshRef = useRef<Question[]>([]);
 
   const [filters, setFilters] = useState<Filters>(initialFilters);
@@ -92,22 +100,30 @@ export default function QuestionsPage() {
       .catch(() => {});
   }, []);
 
-  // Show cached questions instantly (no loading flash on refresh), then check
-  // in the background for newly added questions. If new ones exist, keep the
-  // cached view and show a "refresh" button instead of replacing silently.
+  // Runs before the browser paints. Returning visitors get their cached
+  // questions here so a refresh never flashes "Loading questions…" — the SSR
+  // HTML shows an empty grid (mounted=false) and this populates it in the
+  // same tick, before the user can see anything.
+  useLayoutEffect(() => {
+    // setState in a layout effect is intentional: populate cached questions
+    // before the browser paints so a refresh never flashes "Loading…".
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
+    const cached = readCache(cacheKey(user?.id));
+    if (cached) {
+      setAllQuestions(cached.data);
+      setLoading(false);
+    }
+  }, [user]);
+
+  // Check in the background for newly added questions. If new ones exist,
+  // keep the cached view and show a "refresh" button instead of replacing
+  // silently; otherwise sync the list (keeps saved-state fresh).
   useEffect(() => {
     const key = cacheKey(user?.id);
     const cached = readCache(key);
     const hasCached = !!cached;
     let cancelled = false;
-
-    // Apply cached data in a microtask so we never show a loading flash.
-    Promise.resolve(hasCached ? cached!.data : null).then((cachedData) => {
-      if (!cancelled && cachedData) {
-        setAllQuestions(cachedData);
-        setLoading(false);
-      }
-    });
 
     api
       .get<Question[]>(`/api/questions?limit=1000`)
@@ -458,7 +474,7 @@ export default function QuestionsPage() {
           
           
           <div className="w-full pb-8">
-          {hasNew && (
+          {hasNew && mounted && (
             <div className="mb-4 flex items-center justify-center gap-3">
               <p className="text-center text-sm text-slate-700">
                 New questions have been added.
@@ -472,11 +488,11 @@ export default function QuestionsPage() {
             </div>
           )}
 
-          {loading ? (
+          {mounted && loading ? (
             <p className="py-8 text-center text-slate-700">
               Loading questions…
             </p>
-          ) : questions.length === 0 ? (
+          ) : mounted && questions.length === 0 ? (
             <p className="mb-4 text-center bg-slate-100 px-4 inline-block py-4 gap-1 text-sm text-slate-700">
               There are no questions matching your filters. Try adjusting the filers or <button className="font-semibold cursor-pointer underline text-blue-700" onClick={() => setShowAdd(true)}>add a question</button>
             </p>
