@@ -23,6 +23,7 @@ import {
   Chatting01Icon,
   LayoutGridIcon,
   ListViewIcon,
+  Refresh01Icon,
 } from "hugeicons-react";
 import CategoryBadge from "@/components/CategoryBadge";
 import DonationCard from "@/components/DonationCard";
@@ -461,9 +462,12 @@ export default function QuestionsPage() {
               </p>
               <button
                 onClick={applyFresh}
-                className="cursor-pointer rounded-lg bg-blue-700 px-4 py-1.5 text-sm font-semibold text-white hover:bg-blue-800"
+                className="flex items-center gap-2 border border-slate-100 bg-gray-100 px-8 h-14 text-sm text-slate-700 hover:bg-blue-700 hover:text-white cursor-pointer disabled:opacity-60 transition-all ease-in-out duration-300"
               >
-                Refresh to view new questions
+                <Refresh01Icon size={20} strokeWidth={2}  />
+                <span>
+                Refresh
+                </span>
               </button>
             </div>
           )}
