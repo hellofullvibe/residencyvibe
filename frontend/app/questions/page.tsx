@@ -41,6 +41,10 @@ const initialFilters: Filters = {
   sort: "",
 };
 
+// Lightweight client cache so repeat visits don't re-request the list.
+const questionsCache = new Map<string, { data: Question[]; at: number }>();
+const CACHE_TTL = 120_000;
+
 export default function QuestionsPage() {
   const { user } = useAuth();
   const [meta, setMeta] = useState<Meta | null>(null);
@@ -61,27 +65,33 @@ export default function QuestionsPage() {
   }, []);
 
   useEffect(() => {
+    // Serve repeat visits from cache so the page doesn't re-request every time.
+    const key = `${user?.id ?? "anon"}|${buildQuery(filters)}`;
+    const hit = questionsCache.get(key);
+    const fresh = !!hit && Date.now() - hit.at < CACHE_TTL;
+    const p: Promise<Question[]> = fresh
+      ? Promise.resolve(hit!.data)
+      : api.get<Question[]>(`/api/questions?${buildQuery(filters)}`);
+
     let cancelled = false;
-    async function start() {
-      try {
-        const data = await api.get<Question[]>(
-          `/api/questions?${buildQuery(filters)}`,
-        );
-        if (!cancelled) setQuestions(data);
-      } catch (err) {
+    p.then((data) => {
+      if (!fresh) questionsCache.set(key, { data, at: Date.now() });
+      if (!cancelled) setQuestions(data);
+    })
+      .catch((err) => {
         if (!cancelled)
           setError(
             err instanceof ApiError ? err.message : "Could not load questions",
           );
-      } finally {
+      })
+      .finally(() => {
         if (!cancelled) setLoading(false);
-      }
-    }
-    start();
+      });
+
     return () => {
       cancelled = true;
     };
-  }, [filters]);
+  }, [filters, user]);
 
   async function toggleSave(q: Question) {
     if (!user) return;
@@ -94,6 +104,7 @@ export default function QuestionsPage() {
       setQuestions((qs) =>
         qs.map((x) => (x.id === q.id ? { ...x, saved: !q.saved } : x)),
       );
+      questionsCache.clear();
     } catch {
       // ignore
     }
@@ -443,6 +454,7 @@ export default function QuestionsPage() {
           onCreated={(q) => {
             setShowAdd(false);
             setQuestions((qs) => [q, ...qs]);
+            questionsCache.clear();
           }}
         />
       )}
