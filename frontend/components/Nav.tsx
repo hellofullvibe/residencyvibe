@@ -69,7 +69,7 @@ export default function Nav() {
           </div>
         </Link>
 
-        <nav className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center justify-center text-sm sm:flex">
+        <nav className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center h-full justify-center text-sm sm:flex">
           {visibleLinks.map((l) => (
             <Link
               key={l.href}
