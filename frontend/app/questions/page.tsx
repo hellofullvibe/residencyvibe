@@ -10,6 +10,7 @@ import {
 } from "react";
 import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
+import { readCache, writeCache } from "@/lib/cache";
 import type { Meta, Question } from "@/lib/types";
 import { useAuth } from "@/lib/auth";
 import QuestionCard from "@/components/QuestionCard";
@@ -52,27 +53,6 @@ function cacheKey(userId?: string) {
   return `rv_questions_${userId ?? "anon"}`;
 }
 
-function readCache(key: string): { data: Question[]; at: number } | null {
-  try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (parsed && Array.isArray(parsed.data)) return parsed;
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-function writeCache(key: string, data: Question[]) {
-  try {
-    localStorage.setItem(key, JSON.stringify({ data, at: Date.now() }));
-  } catch {
-    // storage full/disabled — ignore
-  }
-}
-
-// true when the fresh list contains questions the cached list doesn't have.
 function hasNewer(cached: Question[], fresh: Question[]) {
   const ids = new Set(cached.map((q) => q.id));
   return fresh.some((q) => !ids.has(q.id));
@@ -109,7 +89,7 @@ export default function QuestionsPage() {
     // before the browser paints so a refresh never flashes "Loading…".
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
-    const cached = readCache(cacheKey(user?.id));
+    const cached = readCache<Question[]>(cacheKey(user?.id));
     if (cached) {
       setAllQuestions(cached.data);
       setLoading(false);
@@ -121,7 +101,7 @@ export default function QuestionsPage() {
   // silently; otherwise sync the list (keeps saved-state fresh).
   useEffect(() => {
     const key = cacheKey(user?.id);
-    const cached = readCache(key);
+    const cached = readCache<Question[]>(key);
     const hasCached = !!cached;
     let cancelled = false;
 

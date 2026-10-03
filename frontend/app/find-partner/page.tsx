@@ -1,12 +1,22 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
+import { readCache, writeCache } from "@/lib/cache";
 import type { PartnerRequest } from "@/lib/types";
 import { useAuth } from "@/lib/auth";
 import DonationCard from "@/components/DonationCard";
 import { Add01Icon, ArrowDown01Icon, CaduceusIcon, Calendar04Icon, Cancel01Icon, Mail02Icon, Refresh01Icon, SmartPhone01Icon, Time03Icon, TimeZoneIcon, UserMultipleIcon } from "hugeicons-react";
+
+interface PartnersCache {
+  wall: PartnerRequest[];
+  mine: PartnerRequest[];
+}
+
+function partnersCacheKey(userId?: string) {
+  return `rv_partners_${userId ?? "anon"}`;
+}
 
 export default function FindPartnerPage() {
   const { user } = useAuth();
@@ -17,6 +27,29 @@ export default function FindPartnerPage() {
   const [error, setError] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const wallRef = useRef<PartnerRequest[]>([]);
+
+  // Keep a ref of the latest wall so background polls can persist mine
+  // together with the current wall without a refetch.
+  useEffect(() => {
+    wallRef.current = wall;
+  }, [wall]);
+
+  // Runs before the browser paints. Returning visitors get their cached
+  // sessions here so a refresh never flashes "Loading…".
+  useLayoutEffect(() => {
+    // setState in a layout effect is intentional: populate cached sessions
+    // before the browser paints so a refresh never flashes "Loading…".
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
+    const cached = readCache<PartnersCache>(partnersCacheKey(user?.id));
+    if (cached) {
+      setWall(cached.data.wall);
+      setMine(cached.data.mine);
+      setLoading(false);
+    }
+  }, [user]);
 
   const loadWall = useCallback(async () => {
     try {
@@ -38,6 +71,8 @@ export default function FindPartnerPage() {
   }, [user]);
 
   useEffect(() => {
+    const key = partnersCacheKey(user?.id);
+    const hasCached = !!readCache<PartnersCache>(key);
     let cancelled = false;
     async function start() {
       try {
@@ -48,9 +83,10 @@ export default function FindPartnerPage() {
         if (!cancelled) {
           setWall(wData);
           if (user) setMine(mData);
+          writeCache(key, { wall: wData, mine: mData });
         }
       } catch (err) {
-        if (!cancelled)
+        if (!cancelled && !hasCached)
           setError(err instanceof ApiError ? err.message : "Could not load sessions");
       } finally {
         if (!cancelled) setLoading(false);
@@ -68,7 +104,13 @@ export default function FindPartnerPage() {
     const id = setInterval(() => {
       api
         .get<PartnerRequest[]>("/api/partners/mine")
-        .then((data) => setMine(data))
+        .then((data) => {
+          setMine(data);
+          writeCache(partnersCacheKey(user.id), {
+            wall: wallRef.current,
+            mine: data,
+          });
+        })
         .catch(() => {});
     }, 15000);
     return () => clearInterval(id);
@@ -236,7 +278,7 @@ export default function FindPartnerPage() {
           <p className="mb-4 text-center bg-red-50 px-4 inline-block py-4 text-sm text-red-700">We are facing some issue loading questions.</p>
         )}
 
-      {loading ? (
+      {mounted && loading ? (
         <p className="py-10 text-center text-slate-500">Loading…</p>
       ) : tab === "browse" ? (
         wall.length === 0 ? (
