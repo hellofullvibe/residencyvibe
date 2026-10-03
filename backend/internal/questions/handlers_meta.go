@@ -31,10 +31,11 @@ var defaultFrequencies = []string{"Most", "Sometimes", "Rare"}
 // and the aggregate programs arrays (seed data + encounter additions).
 func (h *Handler) Meta(w http.ResponseWriter, r *http.Request) {
 	rows, err := h.pool.Query(r.Context(), `
-		select distinct program from questions where program is not null and program <> ''
+		select distinct program from questions
+		where program is not null and program <> '' and is_deleted = false
 		union
 		select distinct unnest(programs) from questions
-		where array_length(programs, 1) > 0
+		where array_length(programs, 1) > 0 and is_deleted = false
 	`)
 	if err != nil {
 		log.Printf("meta error: %v", err)

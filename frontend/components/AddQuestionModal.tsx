@@ -12,30 +12,73 @@ export default function AddQuestionModal({
   meta,
   onClose,
   onCreated,
+  editQuestion,
+  onUpdated,
 }: {
   meta: Meta | null;
   onClose: () => void;
   onCreated: (q: Question) => void;
+  editQuestion?: Question | null;
+  onUpdated?: (q: Question) => void;
 }) {
   const { user } = useAuth();
-  const [form, setForm] = useState({
-    text: "",
-    variants: "",
-    category: meta?.categories?.[0] || "About You",
-    specialty: "",
-    frequency: "",
-    year: String(new Date().getFullYear()),
-    settingsType: "direct" as "direct" | "percentage",
-    directSetting: "",
-    percentage: {} as Record<string, string>,
-  });
-  const [programOptions, setProgramOptions] = useState<ProgramOption[]>([]);
+
+  const initial = (() => {
+    if (editQuestion) {
+      const positive = (editQuestion.settings || []).filter((s) => s.count > 0);
+      const percentage: Record<string, string> = {};
+      (editQuestion.settings || []).forEach((s) => {
+        if (s.count > 0) percentage[s.setting] = String(s.count);
+      });
+      return {
+        text: editQuestion.text,
+        variants: (editQuestion.variants || []).join("\n"),
+        category: editQuestion.category,
+        specialty: editQuestion.specialty ?? "",
+        frequency: editQuestion.frequency ?? "",
+        year: editQuestion.year ? String(editQuestion.year) : String(new Date().getFullYear()),
+        settingsType: (positive.length === 1 ? "direct" : "percentage") as "direct" | "percentage",
+        directSetting: positive.length === 1 ? positive[0].setting : "",
+        percentage,
+      };
+    }
+    return {
+      text: "",
+      variants: "",
+      category: meta?.categories?.[0] || "About You",
+      specialty: "",
+      frequency: "",
+      year: String(new Date().getFullYear()),
+      settingsType: "direct" as "direct" | "percentage",
+      directSetting: "",
+      percentage: {} as Record<string, string>,
+    };
+  })();
+
+  const initialPrograms: ProgramOption[] = (() => {
+    if (editQuestion) {
+      const progNames =
+        editQuestion.programs?.length > 0
+          ? editQuestion.programs
+          : editQuestion.program
+            ? [editQuestion.program]
+            : [];
+      return progNames.map((n) => ({ name: n }));
+    }
+    return [];
+  })();
+
+  const [form, setForm] = useState(initial);
+  const [programOptions, setProgramOptions] = useState<ProgramOption[]>(initialPrograms);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   if (!user) {
     return (
-      <ModalShell title="Add a question" onClose={onClose}>
+<ModalShell
+      title={editQuestion ? "Edit question" : "Add a question"}
+      onClose={onClose}
+    >
         <p className="text-sm text-slate-600">
           You need an account to add questions.{" "}
           <a href="/signup" className="font-medium text-slate-900 underline">
@@ -69,7 +112,7 @@ export default function AddQuestionModal({
       category: form.category,
     };
     if (form.specialty) body.specialty = form.specialty;
-    if (programOptions.length > 0) body.programs = programOptions.map((p) => p.name);
+    body.programs = programOptions.map((p) => p.name);
     if (form.frequency) body.frequency = form.frequency;
     if (form.year) body.year = Number(form.year);
     if (form.settingsType === "direct") {
@@ -85,8 +128,13 @@ export default function AddQuestionModal({
       body.settings = { type: "percentage", values };
     }
     try {
-      const q = await api.post<Question>("/api/questions", body);
-      onCreated(q);
+      if (editQuestion) {
+        const q = await api.put<Question>(`/api/questions/${editQuestion.id}`, body);
+        onUpdated?.(q);
+      } else {
+        const q = await api.post<Question>("/api/questions", body);
+        onCreated(q);
+      }
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not add question");
       setSubmitting(false);
@@ -250,7 +298,7 @@ export default function AddQuestionModal({
             disabled={submitting}
             className="bg-blue-700 w-full cursor-pointer sm:px-8 h-14 flex items-center justify-center font-semibold text-white hover:bg-blue-800 transition-all ease-in-out duration-300 disabled:opacity-60"
           >
-            {submitting ? "Adding…" : "Add question"}
+            {submitting ? "Saving…" : editQuestion ? "Save changes" : "Add question"}
           </button>
           <button
             type="button"

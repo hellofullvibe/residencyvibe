@@ -43,9 +43,10 @@ func (h *Handler) Search(w http.ResponseWriter, r *http.Request) {
 		  select coalesce(round(avg(r.star)::numeric, 1), 0) as star
 		  from ratings r where r.question_id = q.id
 		) s
-		where to_tsvector('english', q.text) @@ to_tsquery('english', $1)
+		where q.is_deleted = false
+		   and (to_tsvector('english', q.text) @@ to_tsquery('english', $1)
 		   or q.text ilike '%' || $2 || '%'
-		   or exists (select 1 from unnest(q.variants) v where v ilike '%' || $2 || '%')
+		   or exists (select 1 from unnest(q.variants) v where v ilike '%' || $2 || '%'))
 		order by q.created_at desc
 		limit $3`, query, q, limit)
 	if err != nil {

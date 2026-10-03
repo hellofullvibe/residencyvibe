@@ -13,6 +13,8 @@ import {
   Bookmark02Icon,
   Cancel01Icon,
   Chatting01Icon,
+  Delete02Icon,
+  Edit01Icon,
   LayoutGridIcon,
   ListViewIcon,
 } from "hugeicons-react";
@@ -52,6 +54,7 @@ export default function QuestionsPage() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [view, setView] = useState<"grid" | "list">("grid");
   const [showAdd, setShowAdd] = useState(false);
+  const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
 
   useEffect(() => {
     api
@@ -96,6 +99,23 @@ export default function QuestionsPage() {
       );
     } catch {
       // ignore
+    }
+  }
+
+  function openEdit(q: Question) {
+    setEditingQuestion(q);
+    setShowAdd(false);
+  }
+
+  async function confirmDelete(q: Question) {
+    if (!window.confirm("Delete this question? It will be hidden from everyone.")) {
+      return;
+    }
+    try {
+      await api.del(`/api/questions/${q.id}`);
+      setQuestions((qs) => qs.filter((x) => x.id !== q.id));
+    } catch {
+      setError("Could not delete question");
     }
   }
 
@@ -399,6 +419,8 @@ export default function QuestionsPage() {
                   <QuestionCard
                     question={q}
                     onToggleSave={user ? toggleSave : undefined}
+                    onEdit={user ? openEdit : undefined}
+                    onDelete={user ? confirmDelete : undefined}
                   />
                   {[2, 19, 49, 74].includes(i) && (
                     <div className="block lg:hidden sm:col-span-2">
@@ -419,6 +441,8 @@ export default function QuestionsPage() {
                     q={q}
                     user={user}
                     onToggleSave={toggleSave}
+                    onEdit={user ? openEdit : undefined}
+                    onDelete={user ? confirmDelete : undefined}
                   />
                   {[2, 19, 49, 74].includes(i) && (
                     <div className="block lg:hidden py-4">
@@ -436,13 +460,22 @@ export default function QuestionsPage() {
         </div>
       </div>
 
-      {showAdd && (
+      {(showAdd || editingQuestion) && (
         <AddQuestionModal
+          key={editingQuestion?.id ?? "new"}
           meta={meta}
-          onClose={() => setShowAdd(false)}
+          editQuestion={editingQuestion}
+          onClose={() => {
+            setShowAdd(false);
+            setEditingQuestion(null);
+          }}
           onCreated={(q) => {
             setShowAdd(false);
             setQuestions((qs) => [q, ...qs]);
+          }}
+          onUpdated={(q) => {
+            setEditingQuestion(null);
+            setQuestions((qs) => qs.map((x) => (x.id === q.id ? q : x)));
           }}
         />
       )}
@@ -456,10 +489,14 @@ function ListRow({
   q,
   user,
   onToggleSave,
+  onEdit,
+  onDelete,
 }: {
   q: Question;
   user: ReturnType<typeof useAuth>["user"];
   onToggleSave: (q: Question) => void;
+  onEdit?: (q: Question) => void;
+  onDelete?: (q: Question) => void;
 }) {
   return (
     <div className="flex items-start gap-3 px-4 py-6 bg-white">
@@ -497,6 +534,24 @@ function ListRow({
         >
           <Bookmark02Icon size={16} strokeWidth={2} className="shrink-0" />
         </button>
+        {onEdit && (
+          <button
+            onClick={() => onEdit(q)}
+            title="Edit question"
+            className="h-14 w-14 rounded-full border border-slate-100 bg-white flex items-center justify-center text-slate-500 hover:text-blue-700 cursor-pointer transition-all duration-300"
+          >
+            <Edit01Icon size={16} strokeWidth={2} />
+          </button>
+        )}
+        {onDelete && (
+          <button
+            onClick={() => onDelete(q)}
+            title="Delete question"
+            className="h-14 w-14 rounded-full border border-slate-100 bg-white flex items-center justify-center text-slate-500 hover:text-red-600 cursor-pointer transition-all duration-300"
+          >
+            <Delete02Icon size={16} strokeWidth={2} />
+          </button>
+        )}
         </div>
       )}
     </div>

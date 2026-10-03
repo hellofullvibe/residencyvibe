@@ -186,7 +186,7 @@ func (h *Handler) Saved(w http.ResponseWriter, r *http.Request) {
 		  select coalesce(round(avg(r.star)::numeric, 1), 0) as star
 		  from ratings r where r.question_id = q.id
 		) s
-		where sv.user_id = $1
+		where sv.user_id = $1 and q.is_deleted = false
 		order by sv.created_at desc`, u.ID)
 	if err != nil {
 		respond.Error(w, http.StatusInternalServerError, "could not load saved questions")

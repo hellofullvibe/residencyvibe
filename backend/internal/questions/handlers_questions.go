@@ -67,7 +67,7 @@ func scanQuestion(scan func(dest ...any) error, item *Question) error {
 
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
-	conds := []string{"1=1"}
+	conds := []string{"q.is_deleted = false"}
 	args := []any{}
 	arg := func(v any) string {
 		args = append(args, v)
@@ -387,7 +387,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 		  select `+starExpr+`
 		  from ratings r where r.question_id = q.id
 		) s
-		where q.id = $1`, id,
+		where q.id = $1 and q.is_deleted = false`, id,
 	).Scan(&item.ID, &item.Text, &item.Variants, &item.Category, &item.Specialty,
 		&item.Program, &item.InstitutionalSetting, &item.Frequency, &item.Year,
 		&item.Star, &item.Programs, &item.CreatedBy, &item.CreatedAt, &item.UpdatedAt,
@@ -460,6 +460,11 @@ type EncounterSummary struct {
 }
 
 func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
+	u := auth.UserFrom(r)
+	if u == nil {
+		respond.Error(w, http.StatusUnauthorized, "not authenticated")
+		return
+	}
 	id, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
 		respond.Error(w, http.StatusBadRequest, "invalid question id")
@@ -471,18 +476,69 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tag, err := h.pool.Exec(r.Context(), `
-		update questions set
-		  text = coalesce(nullif($1, ''), text),
-		  variants = $2,
-		  category = coalesce(nullif($3, ''), category),
-		  specialty = $4, program = $5, institutional_setting = coalesce($6, institutional_setting),
-		  frequency = $7, year = $8,
-		  updated_at = now()
-		where id = $9`,
-		in.Text, in.Variants, in.Category, in.Specialty, in.Program, in.InstitutionalSetting,
-		in.Frequency, in.Year, id)
+	// Normalize programs (multi-select) or legacy single program.
+	progNames := []string{}
+	if in.Programs != nil {
+		for _, p := range in.Programs {
+			p = strings.TrimSpace(p)
+			if p != "" && !containsString(progNames, p) {
+				progNames = append(progNames, p)
+			}
+		}
+	}
+	if len(progNames) == 0 && in.Program != nil && strings.TrimSpace(*in.Program) != "" {
+		progNames = []string{strings.TrimSpace(*in.Program)}
+	}
+	if len(progNames) > 0 {
+		in.Program = &progNames[0]
+	} else if in.Programs != nil {
+		in.Program = nil
+	}
+
+	// Settings weights only change when explicitly provided.
+	updateWeights := in.Settings != nil || in.InstitutionalSetting != nil
+	var cb, ub, mil, cbua, other int
+	if updateWeights {
+		weights, direct := resolveSettings(in.Settings, in.InstitutionalSetting)
+		if in.InstitutionalSetting == nil {
+			in.InstitutionalSetting = direct
+		}
+		cb, ub, mil, cbua, other = weightsFromMap(weights)
+	}
+
+	setCols := []string{
+		"text = $1", "variants = $2", "category = $3",
+		"specialty = $4", "program = $5", "institutional_setting = $6",
+		"frequency = $7", "year = $8",
+	}
+	args := []any{in.Text, in.Variants, in.Category, in.Specialty, in.Program, in.InstitutionalSetting,
+		in.Frequency, in.Year}
+	n := 8
+	if in.Programs != nil {
+		n++
+		setCols = append(setCols, "programs = $"+strconv.Itoa(n))
+		args = append(args, progNames)
+	}
+	if updateWeights {
+		for _, col := range []string{
+			"setting_community_based", "setting_university_based", "setting_military_based",
+			"setting_cb_university_affiliated", "setting_other",
+		} {
+			n++
+			setCols = append(setCols, col+" = $"+strconv.Itoa(n))
+		}
+		args = append(args, cb, ub, mil, cbua, other)
+	}
+	n++
+	setCols = append(setCols, "updated_at = now()")
+
+	sql := `update questions set ` + strings.Join(setCols, ", ") +
+		` where id = $` + strconv.Itoa(n) + ` and is_deleted = false`
+	args = append(args, id)
+
+	tag, err := h.pool.Exec(r.Context(), sql, args...)
 	if err != nil {
+		log.Printf("update question error: %v", err)
 		respond.Error(w, http.StatusInternalServerError, "could not update question")
 		return
 	}
@@ -578,14 +634,15 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 		respond.Error(w, http.StatusBadRequest, "invalid question id")
 		return
 	}
+	// Soft delete: hide the question; it is never physically removed.
 	tag, err := h.pool.Exec(r.Context(),
-		`delete from questions where id = $1 and created_by = $2`, id, u.ID)
+		`update questions set is_deleted = true, updated_at = now() where id = $1 and is_deleted = false`, id)
 	if err != nil {
 		respond.Error(w, http.StatusInternalServerError, "could not delete question")
 		return
 	}
 	if tag.RowsAffected() == 0 {
-		respond.Error(w, http.StatusNotFound, "question not found or not yours")
+		respond.Error(w, http.StatusNotFound, "question not found")
 		return
 	}
 	respond.JSON(w, http.StatusOK, map[string]string{"message": "deleted"})
@@ -714,7 +771,7 @@ func (h *Handler) fetchQuestion(ctx context.Context, id uuid.UUID) (Question, er
 		  select `+starExpr+`
 		  from ratings r where r.question_id = q.id
 		) s
-		where q.id = $1`, id,
+		where q.id = $1 and q.is_deleted = false`, id,
 	).Scan(&item.ID, &item.Text, &item.Variants, &item.Category, &item.Specialty,
 		&item.Program, &item.InstitutionalSetting, &item.Frequency, &item.Year,
 		&item.Star, &item.Programs, &item.CreatedBy, &item.CreatedAt, &item.UpdatedAt,
