@@ -276,23 +276,7 @@ export default function QuestionDetailPage() {
         </div>
       </div>
 
-      {/* {q.my_encounters && q.my_encounters.length > 0 && (
-        <div className="mt-1 border border-slate-100 bg-white px-6 py-4">
-          <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
-            You encountered this at
-          </span>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {q.my_encounters.map((n) => (
-              <span
-                key={n}
-                className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800"
-              >
-                {n}
-              </span>
-            ))}
-          </div>
-        </div>
-      )} */}
+      
 
       {/* Recent encounters card */}
       <div className="mt-1 border border-slate-100 bg-white px-6 py-8">
