@@ -25,10 +25,11 @@ export const metadata: Metadata = {
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const gaId = process.env.GA_ID || "";
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body className="min-h-screen flex flex-col antialiased">
-        <GAScript />
+        <GAScript gaId={gaId} />
         <AuthProvider>
           <Nav />
           <main className="flex-1">{children}</main>

@@ -1,18 +1,17 @@
 "use client";
 
-// Google Analytics 4 helper. All calls no-op safely when NEXT_PUBLIC_GA_ID is
-// not configured, so local/dev builds work without analytics.
-const GA_ID = process.env.NEXT_PUBLIC_GA_ID || "";
+// Google Analytics 4 helper. The GA measurement id is passed in from the
+// server (root layout reads process.env.GA_ID) rather than inlined into the
+// client bundle, so it can be stored as an encrypted/config Vercel variable.
+// All calls no-op safely when no id is configured.
+let gaId = "";
 
-declare global {
-  interface Window {
-    dataLayer?: unknown[];
-    gtag?: (...args: unknown[]) => void;
-  }
+export function initAnalytics(id: string) {
+  gaId = id;
 }
 
 export function isAnalyticsEnabled() {
-  return !!GA_ID;
+  return !!gaId;
 }
 
 export function track(eventName: string, params?: Record<string, unknown>) {
@@ -26,4 +25,9 @@ export function track(eventName: string, params?: Record<string, unknown>) {
   }
 }
 
-export { GA_ID };
+declare global {
+  interface Window {
+    dataLayer?: unknown[];
+    gtag?: (...args: unknown[]) => void;
+  }
+}
