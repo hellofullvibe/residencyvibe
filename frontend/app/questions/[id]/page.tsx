@@ -23,6 +23,7 @@ export default function QuestionDetailPage() {
   const [error, setError] = useState("");
   const [newVariant, setNewVariant] = useState("");
   const [showEdit, setShowEdit] = useState(false);
+  const [showAllPrograms, setShowAllPrograms] = useState(false);
   const [meta, setMeta] = useState<Meta | null>(null);
 
   useEffect(() => {
@@ -201,7 +202,31 @@ export default function QuestionDetailPage() {
           {q.year && <span>Year: {q.year}</span>}
         </div>
         <div className="mt-1 flex flex-wrap gap-y-2 gap-x-4 gap-y-2 text-sm text-slate-400">
-          {q.program && <span>List of Programs: {q.program}</span>}
+          {q.programs && q.programs.length > 0 ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-medium text-slate-600">Programs:</span>
+              {(showAllPrograms ? q.programs : q.programs.slice(0, 5)).map((p) => (
+                <span
+                  key={p}
+                  className="rounded-full bg-slate-50 px-3 py-1 text-xs text-slate-700"
+                >
+                  {p}
+                </span>
+              ))}
+              {q.programs.length > 5 && (
+                <button
+                  onClick={() => setShowAllPrograms((v) => !v)}
+                  className="text-xs font-medium text-blue-700 underline"
+                >
+                  {showAllPrograms
+                    ? "Show less"
+                    : `View more (+${q.programs.length - 5})`}
+                </button>
+              )}
+            </div>
+          ) : q.program ? (
+            <span>List of Programs: {q.program}</span>
+          ) : null}
         </div>
 
         <div className="w-full flex items-center justify-between gap-2 mt-4 pt-4 border-t border-slate-100">

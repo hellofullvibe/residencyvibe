@@ -122,9 +122,9 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 		order = "q.created_at desc"
 	}
 
-	limit := 50
+	limit := 100
 	if v := q.Get("limit"); v != "" {
-		if n, err := strconv.Atoi(v); err == nil && n > 0 && n <= 200 {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 && n <= 1000 {
 			limit = n
 		}
 	}

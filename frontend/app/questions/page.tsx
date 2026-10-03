@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, Fragment } from "react";
+import { useMemo, useEffect, useState, Fragment } from "react";
 import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
 import type { Meta, Question } from "@/lib/types";
@@ -48,7 +48,7 @@ const CACHE_TTL = 120_000;
 export default function QuestionsPage() {
   const { user } = useAuth();
   const [meta, setMeta] = useState<Meta | null>(null);
-  const [questions, setQuestions] = useState<Question[]>([]);
+  const [allQuestions, setAllQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -64,19 +64,20 @@ export default function QuestionsPage() {
       .catch(() => {});
   }, []);
 
+  // Fetch the full list once (cached). Sort & filters run client-side so
+  // changing them is instant instead of hitting the backend each time.
   useEffect(() => {
-    // Serve repeat visits from cache so the page doesn't re-request every time.
-    const key = `${user?.id ?? "anon"}|${buildQuery(filters)}`;
+    const key = `${user?.id ?? "anon"}|all`;
     const hit = questionsCache.get(key);
     const fresh = !!hit && Date.now() - hit.at < CACHE_TTL;
     const p: Promise<Question[]> = fresh
       ? Promise.resolve(hit!.data)
-      : api.get<Question[]>(`/api/questions?${buildQuery(filters)}`);
+      : api.get<Question[]>(`/api/questions?limit=1000`);
 
     let cancelled = false;
     p.then((data) => {
       if (!fresh) questionsCache.set(key, { data, at: Date.now() });
-      if (!cancelled) setQuestions(data);
+      if (!cancelled) setAllQuestions(data);
     })
       .catch((err) => {
         if (!cancelled)
@@ -91,7 +92,13 @@ export default function QuestionsPage() {
     return () => {
       cancelled = true;
     };
-  }, [filters, user]);
+  }, [user]);
+
+  // Client-side filter + sort — no network request.
+  const questions = useMemo(
+    () => filterAndSort(allQuestions, filters),
+    [allQuestions, filters],
+  );
 
   async function toggleSave(q: Question) {
     if (!user) return;
@@ -101,7 +108,7 @@ export default function QuestionsPage() {
       } else {
         await api.post(`/api/questions/${q.id}/save`);
       }
-      setQuestions((qs) =>
+      setAllQuestions((qs) =>
         qs.map((x) => (x.id === q.id ? { ...x, saved: !q.saved } : x)),
       );
       questionsCache.clear();
@@ -453,7 +460,7 @@ export default function QuestionsPage() {
           onClose={() => setShowAdd(false)}
           onCreated={(q) => {
             setShowAdd(false);
-            setQuestions((qs) => [q, ...qs]);
+            setAllQuestions((qs) => [q, ...qs]);
             questionsCache.clear();
           }}
         />
@@ -642,10 +649,45 @@ function ProgramSelect({
   );
 }
 
-function buildQuery(filters: Filters) {
-  const params = new URLSearchParams();
-  Object.entries(filters).forEach(([k, v]) => {
-    if (v) params.set(k, v);
+// Client-side filter + sort. Mirrors the server-side behavior so sorting and
+// filtering the questions page is instant (no network request).
+function filterAndSort(all: Question[], f: Filters): Question[] {
+  let out = all.filter((q) => {
+    if (f.category && q.category !== f.category) return false;
+    if (f.specialty && q.specialty !== f.specialty) return false;
+    if (f.frequency && q.frequency !== f.frequency) return false;
+    if (f.program && q.program !== f.program && !(q.programs || []).includes(f.program))
+      return false;
+    if (f.min_star && q.star < Number(f.min_star)) return false;
+
+    const settingShare = q.settings?.find((s) => s.setting === f.institutional_setting);
+    if (f.institutional_setting) {
+      // any share (>0) of the selected setting
+      if (!settingShare || settingShare.count <= 0) return false;
+      if (f.min_percent && settingShare.percentage < Number(f.min_percent)) return false;
+    }
+    return true;
   });
-  return params.toString();
+
+  switch (f.sort) {
+    case "oldest":
+      out = out.sort((a, b) => a.created_at.localeCompare(b.created_at));
+      break;
+    case "star":
+      out = out.sort((a, b) => b.star - a.star);
+      break;
+    case "frequency":
+      out = out.sort((a, b) => freqRank(b.frequency) - freqRank(a.frequency));
+      break;
+    default:
+      out = out.sort((a, b) => b.created_at.localeCompare(a.created_at));
+  }
+  return out;
+}
+
+function freqRank(f?: string | null): number {
+  if (f === "Most") return 3;
+  if (f === "Sometimes") return 2;
+  if (f === "Rare") return 1;
+  return 0;
 }

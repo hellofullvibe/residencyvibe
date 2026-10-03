@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api, ApiError } from "@/lib/api";
 import type { Program } from "@/lib/types";
-import { ArrowDown01Icon, Cancel01Icon } from "hugeicons-react";
+import { ArrowDown01Icon } from "hugeicons-react";
 
 export type ProgramOption = { id?: string; name: string };
 
@@ -33,6 +33,19 @@ export default function ProgramPicker({
   const [open, setOpen] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
 
+  // Debounce the API search so typing doesn't fire a request per keystroke.
+  useEffect(() => {
+    const q = query.trim();
+    if (!q) return;
+    const t = setTimeout(() => {
+      api
+        .get<Program[]>(`/api/programs?q=${encodeURIComponent(q)}`)
+        .then((d) => setResults(d))
+        .catch(() => setResults([]));
+    }, 300);
+    return () => clearTimeout(t);
+  }, [query]);
+
   const list: ProgramOption[] = [];
   if (multi && Array.isArray(value)) {
     list.push(...value);
@@ -41,21 +54,10 @@ export default function ProgramPicker({
   }
   const isSelected = (name: string) => list.some((x) => x.name === name);
 
-  async function search(s: string) {
+  function onQueryChange(s: string) {
     setQuery(s);
     setOpen(true);
-    if (!s.trim()) {
-      setResults([]);
-      return;
-    }
-    try {
-      const data = await api.get<Program[]>(
-        `/api/programs?q=${encodeURIComponent(s)}`
-      );
-      setResults(data);
-    } catch {
-      setResults([]);
-    }
+    if (!s.trim()) setResults([]);
   }
 
   function toggle(p: Program) {
@@ -73,10 +75,6 @@ export default function ProgramPicker({
     }
   }
 
-  function remove(name: string) {
-    onChange(list.filter((x) => x.name !== name));
-  }
-
   function addProgram(p: Program) {
     if (multi) {
       onChange(list.some((x) => x.name === p.name) ? list : [...list, { id: p.id, name: p.name }]);
@@ -91,7 +89,7 @@ export default function ProgramPicker({
     <div className="relative w-full">
       <input
         value={query}
-        onChange={(e) => search(e.target.value)}
+        onChange={(e) => onQueryChange(e.target.value)}
         onFocus={() => setOpen(true)}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
         placeholder={placeholder}
