@@ -189,9 +189,9 @@ export default function QuestionDetailPage() {
         )}
 
         <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-400">
-          {q.specialty && <span>Specialty: {q.specialty}</span>}
+          {q.specialty && <div>Specialty: <span className="text-sm text-slate-700">{q.specialty}</span></div>}
           {q.settings && q.settings.some((s) => s.count > 0) && (
-            <span className="text-slate-600">
+            <span className="text-slate-700">
               <span className="text-slate-400">Setting: </span>
               {q.settings
                 .map((s) => `${s.setting} ${s.percentage.toFixed(1)}%`)
@@ -199,16 +199,16 @@ export default function QuestionDetailPage() {
             </span>
           )}
 
-          {q.year && <span>Year: {q.year}</span>}
+          {q.year && <div>Year: <span className="text-sm text-slate-700">{q.year}</span></div>}
         </div>
         <div className="mt-1 flex flex-wrap gap-y-2 gap-x-4 gap-y-2 text-sm text-slate-400">
           {q.programs && q.programs.length > 0 ? (
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="font-medium text-slate-600">Programs:</span>
+            <div className="flex flex-col gap-2">
+              <span className="text-slate-400">Programs:</span>
               {(showAllPrograms ? q.programs : q.programs.slice(0, 5)).map((p) => (
                 <span
                   key={p}
-                  className="rounded-full bg-slate-50 px-3 py-1 text-xs text-slate-700"
+                  className="rounded-full bg-slate-50 px-4 py-1 text-xs text-slate-700"
                 >
                   {p}
                 </span>
@@ -216,7 +216,7 @@ export default function QuestionDetailPage() {
               {q.programs.length > 5 && (
                 <button
                   onClick={() => setShowAllPrograms((v) => !v)}
-                  className="text-xs font-medium text-blue-700 underline"
+                  className="text-xs font-medium text-blue-700 underline cursor-pointer"
                 >
                   {showAllPrograms
                     ? "Show less"
