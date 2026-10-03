@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useEffect, useState, Fragment } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
 import type { Meta, Question } from "@/lib/types";
@@ -41,9 +41,35 @@ const initialFilters: Filters = {
   sort: "",
 };
 
-// Lightweight client cache so repeat visits don't re-request the list.
-const questionsCache = new Map<string, { data: Question[]; at: number }>();
-const CACHE_TTL = 120_000;
+function cacheKey(userId?: string) {
+  return `rv_questions_${userId ?? "anon"}`;
+}
+
+function readCache(key: string): { data: Question[]; at: number } | null {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed && Array.isArray(parsed.data)) return parsed;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function writeCache(key: string, data: Question[]) {
+  try {
+    localStorage.setItem(key, JSON.stringify({ data, at: Date.now() }));
+  } catch {
+    // storage full/disabled — ignore
+  }
+}
+
+// true when the fresh list contains questions the cached list doesn't have.
+function hasNewer(cached: Question[], fresh: Question[]) {
+  const ids = new Set(cached.map((q) => q.id));
+  return fresh.some((q) => !ids.has(q.id));
+}
 
 export default function QuestionsPage() {
   const { user } = useAuth();
@@ -51,6 +77,8 @@ export default function QuestionsPage() {
   const [allQuestions, setAllQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [hasNew, setHasNew] = useState(false);
+  const freshRef = useRef<Question[]>([]);
 
   const [filters, setFilters] = useState<Filters>(initialFilters);
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -64,29 +92,47 @@ export default function QuestionsPage() {
       .catch(() => {});
   }, []);
 
-  // Fetch the full list once (cached). Sort & filters run client-side so
-  // changing them is instant instead of hitting the backend each time.
+  // Show cached questions instantly (no loading flash on refresh), then check
+  // in the background for newly added questions. If new ones exist, keep the
+  // cached view and show a "refresh" button instead of replacing silently.
   useEffect(() => {
-    const key = `${user?.id ?? "anon"}|all`;
-    const hit = questionsCache.get(key);
-    const fresh = !!hit && Date.now() - hit.at < CACHE_TTL;
-    const p: Promise<Question[]> = fresh
-      ? Promise.resolve(hit!.data)
-      : api.get<Question[]>(`/api/questions?limit=1000`);
-
+    const key = cacheKey(user?.id);
+    const cached = readCache(key);
+    const hasCached = !!cached;
     let cancelled = false;
-    p.then((data) => {
-      if (!fresh) questionsCache.set(key, { data, at: Date.now() });
-      if (!cancelled) setAllQuestions(data);
-    })
+
+    // Apply cached data in a microtask so we never show a loading flash.
+    Promise.resolve(hasCached ? cached!.data : null).then((cachedData) => {
+      if (!cancelled && cachedData) {
+        setAllQuestions(cachedData);
+        setLoading(false);
+      }
+    });
+
+    api
+      .get<Question[]>(`/api/questions?limit=1000`)
+      .then((fresh) => {
+        writeCache(key, fresh);
+        if (cancelled) return;
+        if (hasCached) {
+          if (hasNewer(cached!.data, fresh)) {
+            freshRef.current = fresh;
+            setHasNew(true);
+          } else {
+            setAllQuestions(fresh); // same content, keep saved-state fresh
+          }
+        } else {
+          setAllQuestions(fresh);
+        }
+      })
       .catch((err) => {
-        if (!cancelled)
+        if (!cancelled && !hasCached)
           setError(
             err instanceof ApiError ? err.message : "Could not load questions",
           );
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled && !hasCached) setLoading(false);
       });
 
     return () => {
@@ -108,13 +154,23 @@ export default function QuestionsPage() {
       } else {
         await api.post(`/api/questions/${q.id}/save`);
       }
-      setAllQuestions((qs) =>
-        qs.map((x) => (x.id === q.id ? { ...x, saved: !q.saved } : x)),
-      );
-      questionsCache.clear();
+      setAllQuestions((qs) => {
+        const next = qs.map((x) => (x.id === q.id ? { ...x, saved: !q.saved } : x));
+        writeCache(cacheKey(user.id), next);
+        return next;
+      });
     } catch {
       // ignore
     }
+  }
+
+  function applyFresh() {
+    const fresh = freshRef.current;
+    if (fresh.length) {
+      setAllQuestions(fresh);
+      writeCache(cacheKey(user?.id), fresh);
+    }
+    setHasNew(false);
   }
 
   function setFilter<K extends keyof Filters>(k: K, v: string) {
@@ -402,6 +458,20 @@ export default function QuestionsPage() {
           
           
           <div className="w-full pb-8">
+          {hasNew && (
+            <div className="mb-4 flex items-center justify-center gap-3">
+              <p className="text-center text-sm text-slate-700">
+                New questions have been added.
+              </p>
+              <button
+                onClick={applyFresh}
+                className="cursor-pointer rounded-lg bg-blue-700 px-4 py-1.5 text-sm font-semibold text-white hover:bg-blue-800"
+              >
+                Refresh to view new questions
+              </button>
+            </div>
+          )}
+
           {loading ? (
             <p className="py-8 text-center text-slate-700">
               Loading questions…
@@ -460,8 +530,11 @@ export default function QuestionsPage() {
           onClose={() => setShowAdd(false)}
           onCreated={(q) => {
             setShowAdd(false);
-            setAllQuestions((qs) => [q, ...qs]);
-            questionsCache.clear();
+            setAllQuestions((qs) => {
+              const next = [q, ...qs];
+              writeCache(cacheKey(user?.id), next);
+              return next;
+            });
           }}
         />
       )}
