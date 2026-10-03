@@ -239,19 +239,9 @@ export default function QuestionDetailPage() {
               </p>
             </div>
           )}
+          <div className="flex items-center justify-end gap-2">
 
-          <button
-            onClick={toggleSave}
-            title={q.saved ? "Unsave" : "Save"}
-            className={`h-11 w-11 sm:w-auto text-sm rounded-full px-4 hover:text-blue-700 flex items-center justify-center gap-1 border cursor-pointer font-medium transition-all ease-in-out duration-300  ${q.saved ? "text-blue-700 border-blue-50 bg-blue-700/5" : "text-black border-slate-100 bg-white"}`}
-          >
-            <Bookmark02Icon size={16} strokeWidth={2} className="shrink-0" />
-            <span className="hidden sm:block">
-              {q.saved ? "Saved" : "Save Question"}
-            </span>
-          </button>
-
-          {user && (
+          {user && data.question.created_by === user.id && (
             <>
               <button
                 onClick={() => setShowEdit(true)}
@@ -269,6 +259,20 @@ export default function QuestionDetailPage() {
               </button>
             </>
           )}
+          <button
+            onClick={toggleSave}
+            title={q.saved ? "Unsave" : "Save"}
+            className={`h-11 w-11 sm:w-auto text-sm rounded-full px-4 hover:text-blue-700 flex items-center justify-center gap-1 border cursor-pointer font-medium transition-all ease-in-out duration-300  ${q.saved ? "text-blue-700 border-blue-50 bg-blue-700/5" : "text-black border-slate-100 bg-white"}`}
+          >
+            <Bookmark02Icon size={16} strokeWidth={2} className="shrink-0" />
+            <span className="hidden sm:block">
+              {q.saved ? "Saved" : "Save Question"}
+            </span>
+          </button>
+            
+          </div>
+
+          
         </div>
       </div>
 

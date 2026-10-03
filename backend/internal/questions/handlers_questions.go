@@ -533,8 +533,8 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	setCols = append(setCols, "updated_at = now()")
 
 	sql := `update questions set ` + strings.Join(setCols, ", ") +
-		` where id = $` + strconv.Itoa(n) + ` and is_deleted = false`
-	args = append(args, id)
+		` where id = $` + strconv.Itoa(n) + ` and is_deleted = false and created_by = $` + strconv.Itoa(n+1)
+	args = append(args, id, u.ID)
 
 	tag, err := h.pool.Exec(r.Context(), sql, args...)
 	if err != nil {
@@ -634,9 +634,9 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 		respond.Error(w, http.StatusBadRequest, "invalid question id")
 		return
 	}
-	// Soft delete: hide the question; it is never physically removed.
+	// Soft delete: hide the question; it is never physically removed. Creator only.
 	tag, err := h.pool.Exec(r.Context(),
-		`update questions set is_deleted = true, updated_at = now() where id = $1 and is_deleted = false`, id)
+		`update questions set is_deleted = true, updated_at = now() where id = $1 and is_deleted = false and created_by = $2`, id, u.ID)
 	if err != nil {
 		respond.Error(w, http.StatusInternalServerError, "could not delete question")
 		return
