@@ -13,6 +13,7 @@ import { api, ApiError } from "@/lib/api";
 import { readCache, writeCache } from "@/lib/cache";
 import type { Meta, Question } from "@/lib/types";
 import { useAuth } from "@/lib/auth";
+import { track } from "@/lib/analytics";
 import QuestionCard from "@/components/QuestionCard";
 import AddQuestionModal from "@/components/AddQuestionModal";
 import {
@@ -151,6 +152,7 @@ export default function QuestionsPage() {
       } else {
         await api.post(`/api/questions/${q.id}/save`);
       }
+      track(q.saved ? "unsave_question" : "save_question", { question_id: q.id });
       setAllQuestions((qs) => {
         const next = qs.map((x) => (x.id === q.id ? { ...x, saved: !q.saved } : x));
         writeCache(cacheKey(user.id), next);

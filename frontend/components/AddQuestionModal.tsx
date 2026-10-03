@@ -4,6 +4,7 @@ import { useState } from "react";
 import { api, ApiError } from "@/lib/api";
 import type { Meta, Question } from "@/lib/types";
 import { useAuth } from "@/lib/auth";
+import { track } from "@/lib/analytics";
 import ProgramPicker from "@/components/ProgramPicker";
 import type { ProgramOption } from "@/components/ProgramPicker";
 import { ArrowDown01Icon, Cancel01Icon } from "hugeicons-react";
@@ -130,9 +131,11 @@ export default function AddQuestionModal({
     try {
       if (editQuestion) {
         const q = await api.put<Question>(`/api/questions/${editQuestion.id}`, body);
+        track("edit_question");
         onUpdated?.(q);
       } else {
         const q = await api.post<Question>("/api/questions", body);
+        track("add_question");
         onCreated?.(q);
       }
     } catch (err) {

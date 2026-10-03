@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "@/lib/auth";
 import Nav from "@/components/Nav";
 import FooterLinks from "@/components/FooterLinks";
+import GAScript from "@/components/GAScript";
 import Link from "next/link";
 
 const geistSans = Geist({
@@ -27,6 +28,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body className="min-h-screen flex flex-col antialiased">
+        <GAScript />
         <AuthProvider>
           <Nav />
           <main className="flex-1">{children}</main>

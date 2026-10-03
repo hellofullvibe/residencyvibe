@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { track } from "@/lib/analytics";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -20,6 +21,7 @@ export default function LoginPage() {
     setSubmitting(true);
     try {
       await api.post("/api/auth/login", { email, password });
+      track("login");
       await refresh();
       router.push("/questions");
     } catch (err) {

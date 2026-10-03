@@ -6,6 +6,7 @@ import { api, ApiError } from "@/lib/api";
 import { readCache, writeCache } from "@/lib/cache";
 import type { PartnerRequest } from "@/lib/types";
 import { useAuth } from "@/lib/auth";
+import { track } from "@/lib/analytics";
 import DonationCard from "@/components/DonationCard";
 import { Add01Icon, ArrowDown01Icon, CaduceusIcon, Calendar04Icon, Cancel01Icon, Mail02Icon, Refresh01Icon, SmartPhone01Icon, Time03Icon, TimeZoneIcon, UserMultipleIcon } from "hugeicons-react";
 
@@ -120,6 +121,7 @@ export default function FindPartnerPage() {
     if (!user) return;
     try {
       const updated = await api.post<PartnerRequest>(`/api/partners/${r.id}/interested`);
+      track("partner_interest", { request_id: r.id });
       setWall((ws) => ws.map((w) => (w.id === r.id ? updated : w)));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not submit interest");
@@ -655,6 +657,7 @@ function CreateModal({
         max_participants: Number(form.max_participants),
         notes: form.notes.trim() || undefined,
       });
+      track("create_partner_session");
       onCreated(r);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not create session");

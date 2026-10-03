@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { track } from "@/lib/analytics";
 
 export default function DonationCard({
   title = "Help Us Keep It Running",
@@ -37,6 +38,7 @@ export default function DonationCard({
           href={href}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={() => track("support_us_click", { href })}
           className="inline-flex h-14 w-full sm:w-60 items-center justify-center bg-white font-semibold text-blue-700 transition-all duration-300 ease-in-out hover:bg-gray-100"
         >
           {buttonLabel}

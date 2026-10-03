@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { track } from "@/lib/analytics";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -29,6 +30,7 @@ export default function SignupPage() {
     setSubmitting(true);
     try {
       await api.post("/api/auth/signup", form);
+      track("sign_up");
       await refresh();
       router.push("/questions");
     } catch (err) {

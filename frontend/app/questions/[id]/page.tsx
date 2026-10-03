@@ -6,6 +6,7 @@ import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
 import type { Comment, Meta, QuestionDetail, User } from "@/lib/types";
 import { useAuth } from "@/lib/auth";
+import { track } from "@/lib/analytics";
 import CategoryBadge from "@/components/CategoryBadge";
 import ProgramPicker from "@/components/ProgramPicker";
 import type { ProgramOption } from "@/components/ProgramPicker";
@@ -66,6 +67,7 @@ export default function QuestionDetailPage() {
     if (!window.confirm("Delete this question? It will be hidden from everyone.")) return;
     try {
       await api.del(`/api/questions/${id}`);
+      track("delete_question", { question_id: id });
       router.push("/questions");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not delete question");
@@ -122,11 +124,13 @@ export default function QuestionDetailPage() {
     try {
       if (data.question.saved) {
         await api.del(`/api/questions/${id}/save`);
+        track("unsave_question", { question_id: id });
         setData(
           (d) => d && { ...d, question: { ...d.question, saved: false } },
         );
       } else {
         await api.post(`/api/questions/${id}/save`);
+        track("save_question", { question_id: id });
         setData((d) => d && { ...d, question: { ...d.question, saved: true } });
       }
     } catch {
@@ -405,6 +409,7 @@ export default function QuestionDetailPage() {
             label="Share how you'd answer this question"
             onSubmit={async (content) => {
               await api.post(`/api/questions/${id}/comments`, { content });
+              track("add_comment", { question_id: id });
               await load();
             }}
           />
@@ -471,6 +476,9 @@ function EncounterForm({
         encountered: selected.length > 0,
         program_ids: selected.filter((x) => x.id).map((x) => x.id as string),
         program_names: selected.filter((x) => !x.id).map((x) => x.name),
+      });
+      track(selected.length > 0 ? "encounter_added" : "encounter_removed", {
+        question_id: questionId,
       });
       await onUpdated();
     } catch (err) {
