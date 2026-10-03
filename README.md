@@ -93,31 +93,31 @@ npm run dev            # starts Next.js on :3000
 
 ## API overview
 
-| Method | Path                     | Description                          |
-| ------ | ------------------------ | ------------------------------------ |
-| POST   | /api/auth/signup         | Create account (full name, email, username, password) |
-| POST   | /api/auth/login          | Sign in                              |
-| POST   | /api/auth/logout         | Sign out                             |
-| GET    | /api/auth/me             | Current user                         |
-| DELETE | /api/account             | Delete account                       |
-| GET    | /api/questions           | List questions (filters + pagination) |
-| POST   | /api/questions           | Add a question                       |
-| GET    | /api/questions/:id       | Question detail with comments        |
-| PUT    | /api/questions/:id       | Update question (star, frequency, etc.) |
-| DELETE | /api/questions/:id       | Delete own question                  |
-| POST   | /api/questions/:id/comments | Comment on a question             |
-| POST   | /api/comments/:id/replies | Reply to a comment                  |
-| POST   | /api/questions/:id/encounter | Record "I encountered" (adds program to list) |
-| POST   | /api/questions/:id/rate     | Rate a question (1-5); star = average of ratings |
-| POST   | /api/questions/:id/save     | Save question to account                    |
-| DELETE | /api/questions/:id/save  | Unsave question                      |
-| GET    | /api/saved               | List saved questions                 |
-| GET    | /api/search?q=...        | Search questions and comments        |
-| GET    | /api/meta                | Categories, specialties, programs, etc. |
+| Method | Path                         | Description                                           |
+| ------ | ---------------------------- | ----------------------------------------------------- |
+| POST   | /api/auth/signup             | Create account (full name, email, username, password) |
+| POST   | /api/auth/login              | Sign in                                               |
+| POST   | /api/auth/logout             | Sign out                                              |
+| GET    | /api/auth/me                 | Current user                                          |
+| DELETE | /api/account                 | Delete account                                        |
+| GET    | /api/questions               | List questions (filters + pagination)                 |
+| POST   | /api/questions               | Add a question                                        |
+| GET    | /api/questions/:id           | Question detail with comments                         |
+| PUT    | /api/questions/:id           | Update question (star, frequency, etc.)               |
+| DELETE | /api/questions/:id           | Delete own question                                   |
+| POST   | /api/questions/:id/comments  | Comment on a question                                 |
+| POST   | /api/comments/:id/replies    | Reply to a comment                                    |
+| POST   | /api/questions/:id/encounter | Record "I encountered" (adds program to list)         |
+| POST   | /api/questions/:id/rate      | Rate a question (1-5); star = average of ratings      |
+| POST   | /api/questions/:id/save      | Save question to account                              |
+| DELETE | /api/questions/:id/save      | Unsave question                                       |
+| GET    | /api/saved                   | List saved questions                                  |
+| GET    | /api/search?q=...            | Search questions and comments                         |
+| GET    | /api/meta                    | Categories, specialties, programs, etc.               |
 
 ## Milestones
 
-- [x] M1 Account Creation (sign up, sign in, account, account delete, donation)
+- [x] M1 Account Creation (Join now, sign in, account, account delete, donation)
 - [x] M2 Question Bank (categories, specialties, programs, institutional setting, frequency, variants, star, encounters, comments + replies)
 - [x] M3 Search (questions + comments)
 - [x] M4 Save questions to account

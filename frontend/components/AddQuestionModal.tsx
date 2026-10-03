@@ -82,7 +82,7 @@ export default function AddQuestionModal({
         <p className="text-sm text-slate-600">
           You need an account to add questions.{" "}
           <a href="/signup" className="font-medium text-slate-900 underline">
-            Sign up
+            Join now
           </a>{" "}
           or{" "}
           <a href="/login" className="font-medium text-slate-900 underline">

@@ -276,8 +276,6 @@ export default function QuestionDetailPage() {
         </div>
       </div>
 
-      
-
       {/* Recent encounters card */}
       <div className="mt-1 border border-slate-100 bg-white px-6 py-8">
         <div className="flex items-center justify-between">
@@ -391,7 +389,7 @@ export default function QuestionDetailPage() {
               href="/signup"
               className="font-medium text-slate-900 underline"
             >
-              Sign up
+              Join now
             </Link>{" "}
             to comment on questions.
           </p>
