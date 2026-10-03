@@ -17,7 +17,7 @@ export default function AddQuestionModal({
 }: {
   meta: Meta | null;
   onClose: () => void;
-  onCreated: (q: Question) => void;
+  onCreated?: (q: Question) => void;
   editQuestion?: Question | null;
   onUpdated?: (q: Question) => void;
 }) {
@@ -133,7 +133,7 @@ export default function AddQuestionModal({
         onUpdated?.(q);
       } else {
         const q = await api.post<Question>("/api/questions", body);
-        onCreated(q);
+        onCreated?.(q);
       }
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not add question");

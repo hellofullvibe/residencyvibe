@@ -1,25 +1,33 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
-import type { Comment, QuestionDetail, User } from "@/lib/types";
+import type { Comment, Meta, QuestionDetail, User } from "@/lib/types";
 import { useAuth } from "@/lib/auth";
 import CategoryBadge from "@/components/CategoryBadge";
 import ProgramPicker from "@/components/ProgramPicker";
 import type { ProgramOption } from "@/components/ProgramPicker";
+import AddQuestionModal from "@/components/AddQuestionModal";
 import { StarRating, StarValue } from "@/components/StarRating";
-import { ArrowLeft02Icon, Bookmark02Icon, Cancel01Icon, TickDouble01Icon } from "hugeicons-react";
+import { ArrowLeft02Icon, Bookmark02Icon, Cancel01Icon, Delete02Icon, Edit01Icon, TickDouble01Icon } from "hugeicons-react";
 
 export default function QuestionDetailPage() {
   const params = useParams<{ id: string }>();
   const id = params.id;
+  const router = useRouter();
   const { user } = useAuth();
   const [data, setData] = useState<QuestionDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [newVariant, setNewVariant] = useState("");
+  const [showEdit, setShowEdit] = useState(false);
+  const [meta, setMeta] = useState<Meta | null>(null);
+
+  useEffect(() => {
+    api.get<Meta>("/api/meta").then(setMeta).catch(() => {});
+  }, []);
 
   const load = useCallback(async () => {
     try {
@@ -50,6 +58,16 @@ export default function QuestionDetailPage() {
       await load();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not delete variant");
+    }
+  }
+
+  async function confirmDelete() {
+    if (!window.confirm("Delete this question? It will be hidden from everyone.")) return;
+    try {
+      await api.del(`/api/questions/${id}`);
+      router.push("/questions");
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Could not delete question");
     }
   }
 
@@ -232,6 +250,25 @@ export default function QuestionDetailPage() {
               {q.saved ? "Saved" : "Save Question"}
             </span>
           </button>
+
+          {user && (
+            <>
+              <button
+                onClick={() => setShowEdit(true)}
+                title="Edit question"
+                className="h-11 w-11 rounded-full border border-slate-100 bg-white flex items-center justify-center text-slate-500 hover:text-blue-700 cursor-pointer transition-all duration-300"
+              >
+                <Edit01Icon size={16} strokeWidth={2} />
+              </button>
+              <button
+                onClick={confirmDelete}
+                title="Delete question"
+                className="h-11 w-11 rounded-full border border-slate-100 bg-white flex items-center justify-center text-slate-500 hover:text-red-600 cursor-pointer transition-all duration-300"
+              >
+                <Delete02Icon size={16} strokeWidth={2} />
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -383,6 +420,18 @@ export default function QuestionDetailPage() {
           ))}
         </div>
       </section>
+
+      {showEdit && data && (
+        <AddQuestionModal
+          meta={meta}
+          editQuestion={data.question}
+          onClose={() => setShowEdit(false)}
+          onUpdated={() => {
+            setShowEdit(false);
+            load();
+          }}
+        />
+      )}
     </div>
   );
 }

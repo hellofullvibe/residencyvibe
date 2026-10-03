@@ -4,18 +4,14 @@ import Link from "next/link";
 import type { Question } from "@/lib/types";
 import CategoryBadge from "@/components/CategoryBadge";
 import { StarValue } from "@/components/StarRating";
-import { Bookmark02Icon, Chatting01Icon, Delete02Icon, Edit01Icon } from "hugeicons-react";
+import { Bookmark02Icon, Chatting01Icon } from "hugeicons-react";
 
 export default function QuestionCard({
   question,
   onToggleSave,
-  onEdit,
-  onDelete,
 }: {
   question: Question;
   onToggleSave?: (q: Question) => void;
-  onEdit?: (q: Question) => void;
-  onDelete?: (q: Question) => void;
 }) {
   const topSetting = (question.settings || []).reduce<Question["settings"][number] | undefined>(
     (best, s) => (!best || s.percentage > best.percentage ? s : best),
@@ -82,24 +78,6 @@ export default function QuestionCard({
         </Link>
 
         <div className="flex items-center gap-2">
-          {onEdit && (
-            <button
-              onClick={() => onEdit(question)}
-              title="Edit question"
-              className="h-11 w-11 rounded-full border border-slate-100 bg-white flex items-center justify-center text-slate-500 hover:text-blue-700 hover:border-blue-50 cursor-pointer transition-all duration-300"
-            >
-              <Edit01Icon size={16} strokeWidth={2} />
-            </button>
-          )}
-          {onDelete && (
-            <button
-              onClick={() => onDelete(question)}
-              title="Delete question"
-              className="h-11 w-11 rounded-full border border-slate-100 bg-white flex items-center justify-center text-slate-500 hover:text-red-600 hover:border-red-50 cursor-pointer transition-all duration-300"
-            >
-              <Delete02Icon size={16} strokeWidth={2} />
-            </button>
-          )}
           {onToggleSave && (
             <button
               onClick={() => onToggleSave(question)}
